@@ -55,7 +55,7 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
                 <span>N</span>
               </div>
               <div style={styles.profileTextCol}>
-                <span style={styles.profileTitle}>Profile N</span>
+                <span style={styles.profileTitle}>N</span>
                 <span style={styles.profileRole}>The First Inscription</span>
                 <p style={styles.profileDesc}>
                   Inscribe as <strong>N</strong> to communicate directly with <strong>H</strong>.
@@ -70,7 +70,7 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
                 className="secret-button-framed"
                 style={styles.profileBtn}
               >
-                ENTER AS PROFILE N
+                ENTER AS N
               </button>
             </div>
 
@@ -80,7 +80,7 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
                 <span>H</span>
               </div>
               <div style={styles.profileTextCol}>
-                <span style={styles.profileTitle}>Profile H</span>
+                <span style={styles.profileTitle}>H</span>
                 <span style={styles.profileRole}>The Second Inscription</span>
                 <p style={styles.profileDesc}>
                   Inscribe as <strong>H</strong> to communicate directly with <strong>N</strong>.
@@ -95,7 +95,7 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
                 className="secret-button-framed"
                 style={styles.profileBtn}
               >
-                ENTER AS PROFILE H
+                ENTER AS H
               </button>
             </div>
           </div>

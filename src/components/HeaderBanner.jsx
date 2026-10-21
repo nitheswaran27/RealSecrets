@@ -2,14 +2,12 @@ import React from 'react';
 import nhLogo from '../assets/nhlogo.webp';
 import { Search } from 'lucide-react';
 
-export default function HeaderBanner({
-  currentProfile,
-}) {
+export default function HeaderBanner() {
   return (
     <header style={styles.headerContainer}>
       {/* 1. Top Navy Announcement Ribbon (Exact match to image) */}
       <div className="navy-top-bar">
-        <span>+THE SECRET CONVERSATION+ STRICTLY BETWEEN N & H</span>
+        <span>+THE SECRET CONVERSATION ONLY BETWEEN YOU and ME+</span>
       </div>
 
       {/* 2. Main Parchment Banner with nhlogo & Navigation */}
@@ -36,22 +34,14 @@ export default function HeaderBanner({
           <span className="desktop-only-nav" style={styles.navItem}>THE CIPHER</span>
           <span className="desktop-only-nav" style={styles.navItem}>SANCTUM</span>
           <span className="desktop-only-nav" style={styles.navItem}>SCROLLS</span>
-          {currentProfile && (
-            <span
-              style={{ ...styles.navItem, color: '#8b1e2d', fontWeight: 700, cursor: 'default' }}
-              id="nav-profile-label"
-            >
-              PROFILE {currentProfile}
-            </span>
-          )}
         </nav>
 
         {/* Right: Clean Decorative Search Frame (Matches reference image) */}
-        <div style={styles.rightActions}>
+        {/* <div style={styles.rightActions}>
           <div style={styles.searchIconFrame}>
             <Search size={16} color="#5a3818" />
           </div>
-        </div>
+        </div> */}
       </div>
     </header>
   );

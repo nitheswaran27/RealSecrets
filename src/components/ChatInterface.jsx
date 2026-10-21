@@ -44,7 +44,6 @@ export default function ChatInterface({
   currentProfile,
   secretCode,
 }) {
-  const partnerProfile = currentProfile === 'N' ? 'H' : 'N';
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -220,10 +219,7 @@ export default function ChatInterface({
   return (
     <div style={styles.container}>
       {/* 1. Exactly Styled Header Banner with nhlogo & navigation */}
-      <HeaderBanner
-        currentProfile={currentProfile}
-        partnerProfile={partnerProfile}
-      />
+      <HeaderBanner />
 
       {/* 2. Main Scroll Room (Chat Messages Area) */}
       <main style={styles.chatArea} id="chat-messages-container">
@@ -258,8 +254,7 @@ export default function ChatInterface({
               THE SECRET CONVERSATION
             </h2>
             <p style={styles.emptyDesc}>
-              No correspondence has yet been inscribed between <strong>Profile N</strong> and{' '}
-              <strong>Profile H</strong>. Inscribe the first ciphered scroll below to commence your journey...
+              No correspondence has yet been inscribed. Inscribe the first ciphered scroll below to commence your secret conversation...
             </p>
           </div>
         )}
@@ -272,7 +267,7 @@ export default function ChatInterface({
             const showDate =
               index === 0 ||
               formatMessageDate(msg.created_at) !==
-                formatMessageDate(messages[index - 1]?.created_at);
+              formatMessageDate(messages[index - 1]?.created_at);
 
             return (
               <React.Fragment key={msg.id || index}>
@@ -292,20 +287,6 @@ export default function ChatInterface({
                   className="animate-fade-in"
                   data-sender={msg.sender}
                 >
-                  {/* Partner Seal Avatar */}
-                  {!isMe && (
-                    <div
-                      style={{
-                        ...styles.sealAvatar,
-                        background: isSenderN
-                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
-                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
-                      }}
-                    >
-                      <span>{msg.sender}</span>
-                    </div>
-                  )}
-
                   {/* Scroll Bubble */}
                   <div
                     style={{
@@ -313,17 +294,19 @@ export default function ChatInterface({
                       alignItems: isMe ? 'flex-end' : 'flex-start',
                     }}
                   >
-                    {/* Scribe Label */}
-                    <div style={styles.senderHeader}>
-                      <span
-                        style={{
-                          ...styles.senderName,
-                          color: isSenderN ? '#8b6b23' : '#8b1e2d',
-                        }}
-                      >
-                        {isMe ? `You (Profile ${msg.sender})` : `Profile ${msg.sender}`}
-                      </span>
-                    </div>
+                    {/* Scribe Label: Only mention You above sent message */}
+                    {isMe && (
+                      <div style={styles.senderHeader}>
+                        <span
+                          style={{
+                            ...styles.senderName,
+                            color: '#8b1e2d',
+                          }}
+                        >
+                          You
+                        </span>
+                      </div>
+                    )}
 
                     {/* Parchment Message Body */}
                     <div
@@ -350,20 +333,6 @@ export default function ChatInterface({
                       )}
                     </div>
                   </div>
-
-                  {/* My Seal Avatar */}
-                  {isMe && (
-                    <div
-                      style={{
-                        ...styles.sealAvatar,
-                        background: isSenderN
-                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
-                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
-                      }}
-                    >
-                      <span>{msg.sender}</span>
-                    </div>
-                  )}
                 </div>
               </React.Fragment>
             );
@@ -381,7 +350,7 @@ export default function ChatInterface({
               onChange={(e) => setInputText(e.target.value)}
               onFocus={handleInputFocus}
               onKeyDown={handleKeyDown}
-              placeholder={`Inscribe secret message as Profile ${currentProfile}... (Enter ↵ to dispatch)`}
+              placeholder={`Inscribe secret message`}
               rows={1}
               enterKeyHint="send"
               autoCapitalize="sentences"
@@ -559,22 +528,6 @@ const styles = {
     alignItems: 'flex-end',
     gap: '12px',
     width: '100%',
-  },
-  sealAvatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    color: '#ffffff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'var(--font-title)',
-    fontSize: '16px',
-    fontWeight: '700',
-    border: '1.5px solid #ffffff',
-    boxShadow: '0 3px 8px rgba(0,0,0,0.25)',
-    flexShrink: 0,
-    marginBottom: '4px',
   },
   bubbleWrapper: {
     display: 'flex',

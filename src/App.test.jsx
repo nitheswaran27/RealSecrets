@@ -79,7 +79,7 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     });
   });
 
-  it('automatically unlocks Profile H directly when DOB is 02/05/2007 and removes unwanted controls', async () => {
+  it('automatically unlocks chat directly when DOB is 02/05/2007 and removes Profile labels & unwanted controls', async () => {
     render(<App />);
 
     const codeInput = document.getElementById('secret-code-input');
@@ -90,11 +90,15 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     fireEvent.change(dobInput, { target: { value: '02/05/2007' } });
     fireEvent.click(continueBtn);
 
-    // Directly in Profile H's chat room!
+    // Directly in chat room!
     await waitFor(() => {
       expect(document.getElementById('message-input')).toBeInTheDocument();
-      expect(document.getElementById('nav-profile-label')).toHaveTextContent(/PROFILE H/i);
     });
+
+    // Verify Profile H / Profile N labels are removed
+    expect(screen.queryByText(/Profile H/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Profile N/i)).not.toBeInTheDocument();
+    expect(document.getElementById('nav-profile-label')).toBeNull();
 
     // Verify removed elements: Local Synced, Lock Seal, Switch Identity, and Security Icon
     expect(screen.queryByText(/Local Synced/i)).not.toBeInTheDocument();
@@ -103,7 +107,7 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     expect(document.getElementById('security-info-button')).toBeNull();
   });
 
-  it('automatically unlocks Profile N directly when DOB is 27/09/2006, sends encrypted message', async () => {
+  it('automatically unlocks chat directly when DOB is 27/09/2006, displays "You" above sent message and no Profile labels', async () => {
     render(<App />);
 
     const codeInput = document.getElementById('secret-code-input');
@@ -114,23 +118,30 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     fireEvent.change(dobInput, { target: { value: '27/09/2006' } });
     fireEvent.click(continueBtn);
 
-    // Directly in Profile N's chat room!
+    // Directly in chat room!
     await waitFor(() => {
       expect(document.getElementById('message-input')).toBeInTheDocument();
-      expect(document.getElementById('nav-profile-label')).toHaveTextContent(/PROFILE N/i);
     });
 
-    // Send encrypted message as N
+    // Verify Profile H / Profile N labels are removed
+    expect(screen.queryByText(/Profile H/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Profile N/i)).not.toBeInTheDocument();
+    expect(document.getElementById('nav-profile-label')).toBeNull();
+
+    // Send encrypted message
     const messageInput = document.getElementById('message-input');
     fireEvent.change(messageInput, {
-      target: { value: 'Secret parchment message from N to H.' },
+      target: { value: 'Secret parchment message between us.' },
     });
     fireEvent.click(document.getElementById('send-message-button'));
 
     await waitFor(() => {
       expect(
-        screen.getByText('Secret parchment message from N to H.')
+        screen.getByText('Secret parchment message between us.')
       ).toBeInTheDocument();
+      // Only "You" is mentioned above the message, NOT "You (Profile N)"
+      expect(screen.getByText('You')).toBeInTheDocument();
+      expect(screen.queryByText(/You \(Profile/i)).not.toBeInTheDocument();
     });
   });
 });

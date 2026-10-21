@@ -106,8 +106,8 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
 
           {/* Introductory Literary Paragraph */}
           <p style={styles.introParagraph}>
-            Only those who hold the ancient cipher may unlock the private correspondence
-            between <strong>Profile N</strong> and <strong>Profile H</strong>.
+            No distance fades a genuine connection, and no silence changes where we began <br />
+
             Inscribe the secret passkey and your celestial date of birth to break the seal...
           </p>
 
@@ -174,7 +174,7 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
                 />
               </div>
               <span style={styles.dobHint}>
-                Your date of birth automatically reveals your keeper profile (N or H).
+                Inscribe your date of birth to verify your sacred identity.
               </span>
             </div>
 
