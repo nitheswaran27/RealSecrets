@@ -3,7 +3,12 @@ import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [react()],
+  server: {
+    host: true,
+    port: 5173,
+  },
   test: {
     environment: 'jsdom',
     globals: true,
