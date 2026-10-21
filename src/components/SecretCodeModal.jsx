@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import HeaderBanner from './HeaderBanner.jsx';
-import { Eye, EyeOff, ShieldCheck, AlertCircle, KeyRound, Calendar } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, KeyRound, Calendar } from 'lucide-react';
 
 import { parseProfileFromDob } from '../services/identity.js';
 

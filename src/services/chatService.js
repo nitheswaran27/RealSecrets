@@ -111,12 +111,49 @@ export async function sendEncryptedMessage({ sender, ciphertext, nonce }) {
 }
 
 /**
- * Subscribes to real-time incoming messages
+ * Broadcasts a read receipt indicating the reader has viewed correspondence
+ * @param {{ reader: 'N'|'H', timestamp?: number }} param0
+ */
+export function broadcastReadReceipt({ reader, timestamp }) {
+  const ts = timestamp || Date.now();
+  try {
+    localStorage.setItem(`realsecrets_last_read_${reader}`, ts.toString());
+  } catch {
+    // ignore
+  }
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const channel = supabase.channel('realsecrets_realtime');
+      channel.send({
+        type: 'broadcast',
+        event: 'READ_RECEIPT',
+        payload: { reader, timestamp: ts },
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      bc.postMessage({ type: 'READ_RECEIPT', reader, timestamp: ts });
+      bc.close();
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/**
+ * Subscribes to real-time incoming messages and read receipts
  * @param {Function} onMessage Callback invoked with the new encrypted message object
- * @param {Function} onStatusChange Callback invoked with connection status ('SUBSCRIBED', 'OFFLINE', etc.)
+ * @param {Function} [onStatusChange] Callback invoked with connection status ('SUBSCRIBED', 'OFFLINE', etc.)
+ * @param {Function} [onReceipt] Callback invoked with receipt object ({ reader, timestamp })
  * @returns {Function} Unsubscribe cleanup function
  */
-export function subscribeToMessages(onMessage, onStatusChange) {
+export function subscribeToMessages(onMessage, onStatusChange, onReceipt) {
   if (isSupabaseConfigured() && supabase) {
     onStatusChange?.('CONNECTING');
 
@@ -135,6 +172,11 @@ export function subscribeToMessages(onMessage, onStatusChange) {
           }
         }
       )
+      .on('broadcast', { event: 'READ_RECEIPT' }, ({ payload }) => {
+        if (payload?.reader && payload?.timestamp) {
+          onReceipt?.(payload);
+        }
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           onStatusChange?.('CONNECTED');
@@ -162,6 +204,8 @@ export function subscribeToMessages(onMessage, onStatusChange) {
       broadcastChannel.onmessage = (event) => {
         if (event.data?.type === 'NEW_MESSAGE' && event.data.message) {
           onMessage(event.data.message);
+        } else if (event.data?.type === 'READ_RECEIPT') {
+          onReceipt?.(event.data);
         }
       };
     } catch (e) {
@@ -180,6 +224,9 @@ export function subscribeToMessages(onMessage, onStatusChange) {
       } catch {
         // ignore
       }
+    } else if (event.key && event.key.startsWith('realsecrets_last_read_') && event.newValue) {
+      const reader = event.key.replace('realsecrets_last_read_', '');
+      onReceipt?.({ reader, timestamp: parseInt(event.newValue, 10) });
     }
   };
 

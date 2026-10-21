@@ -164,6 +164,13 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
       // Only "You" is mentioned above the message, NOT "You (Profile N)"
       expect(screen.getByText('You')).toBeInTheDocument();
       expect(screen.queryByText(/You \(Profile/i)).not.toBeInTheDocument();
+
+      // Verify the profile avatar for keeper N is displayed beside the message
+      expect(screen.getByTestId('avatar-me-N')).toBeInTheDocument();
+      expect(screen.getByTestId('avatar-me-N')).toHaveTextContent('N');
+
+      // Verify the delivery/read tick is rendered
+      expect(document.querySelector('[data-testid^="status-"]')).toBeInTheDocument();
     });
   });
 });

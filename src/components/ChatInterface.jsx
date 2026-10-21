@@ -4,6 +4,7 @@ import nhLogo from '../assets/nhlogo.webp';
 import {
   RefreshCw,
   AlertTriangle,
+  Check,
   CheckCheck,
   Feather,
 } from 'lucide-react';
@@ -12,6 +13,7 @@ import {
   fetchMessages,
   sendEncryptedMessage,
   subscribeToMessages,
+  broadcastReadReceipt,
 } from '../services/chatService.js';
 
 function formatMessageTime(isoString) {
@@ -44,11 +46,21 @@ export default function ChatInterface({
   currentProfile,
   secretCode,
 }) {
+  const partnerProfile = currentProfile === 'N' ? 'H' : 'N';
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState('OFFLINE');
+  const [partnerLastRead, setPartnerLastRead] = useState(() => {
+    try {
+      const stored = localStorage.getItem(`realsecrets_last_read_${partnerProfile}`);
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -115,6 +127,9 @@ export default function ChatInterface({
         );
         if (isMounted) {
           setMessages(decryptedList);
+          if (decryptedList.length > 0) {
+            broadcastReadReceipt({ reader: currentProfile, timestamp: Date.now() });
+          }
         }
       } catch (err) {
         console.error('Error fetching messages:', err);
@@ -130,7 +145,7 @@ export default function ChatInterface({
 
     init();
 
-    // Subscribe to real-time events
+    // Subscribe to real-time events and read receipts
     const unsubscribe = subscribeToMessages(
       async (newMsg) => {
         const decrypted = await decryptSingleMessage(newMsg);
@@ -141,6 +156,19 @@ export default function ChatInterface({
             }
             return [...prev, decrypted];
           });
+          if (newMsg.sender === partnerProfile) {
+            broadcastReadReceipt({ reader: currentProfile, timestamp: Date.now() });
+          }
+        }
+      },
+      (status) => {
+        if (!isMounted) return;
+        setConnectionStatus(status);
+      },
+      (receipt) => {
+        if (!isMounted) return;
+        if (receipt?.reader === partnerProfile && receipt?.timestamp) {
+          setPartnerLastRead((prev) => Math.max(prev, receipt.timestamp));
         }
       }
     );
@@ -149,7 +177,16 @@ export default function ChatInterface({
       isMounted = false;
       unsubscribe();
     };
-  }, [secretCode, decryptSingleMessage]);
+  }, [secretCode, decryptSingleMessage, currentProfile, partnerProfile]);
+
+  // Broadcast read receipt when keeper focuses the window/tab
+  useEffect(() => {
+    const handleFocus = () => {
+      broadcastReadReceipt({ reader: currentProfile, timestamp: Date.now() });
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [currentProfile]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -158,6 +195,29 @@ export default function ChatInterface({
   useEffect(() => {
     inputRef.current?.focus();
   }, [currentProfile]);
+
+  // Calculates real delivery and read status for sent messages
+  const getMessageStatus = (msg) => {
+    if (msg.sender !== currentProfile) return null;
+
+    const msgTime = new Date(msg.created_at).getTime();
+
+    // 1. If partner has sent ANY message created on or after this message, partner definitely read it
+    const partnerRepliedAfter = messages.some(
+      (m) => m.sender === partnerProfile && new Date(m.created_at).getTime() >= msgTime
+    );
+    if (partnerRepliedAfter) return 'read';
+
+    // 2. If partner's last read receipt timestamp is on or after this message
+    if (partnerLastRead >= msgTime) return 'read';
+
+    // 3. If Realtime channel is connected / delivered
+    if (connectionStatus === 'CONNECTED' || connectionStatus === 'MOCK_REALTIME') {
+      return 'delivered';
+    }
+
+    return 'sent';
+  };
 
   const handleSendMessage = async (e) => {
     e?.preventDefault();
@@ -287,6 +347,23 @@ export default function ChatInterface({
                   className="animate-fade-in"
                   data-sender={msg.sender}
                 >
+                  {/* Partner Profile Seal Avatar */}
+                  {!isMe && (
+                    <div
+                      style={{
+                        ...styles.sealAvatar,
+                        background: isSenderN
+                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
+                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
+                        borderColor: isSenderN ? '#dfb86c' : '#d45d6e',
+                      }}
+                      title={isSenderN ? 'Profile N' : 'Profile H'}
+                      data-testid={`avatar-partner-${msg.sender}`}
+                    >
+                      <span>{msg.sender}</span>
+                    </div>
+                  )}
+
                   {/* Scroll Bubble */}
                   <div
                     style={{
@@ -323,16 +400,56 @@ export default function ChatInterface({
                       <p style={styles.scrollText}>{msg.decryptedText}</p>
                     </div>
 
-                    {/* Meta info: Time */}
-                    <div style={styles.metaRow}>
+                    {/* Meta info: Time & Realtime Delivery/Read Status */}
+                    <div
+                      style={{
+                        ...styles.metaRow,
+                        justifyContent: isMe ? 'flex-end' : 'flex-start',
+                      }}
+                    >
                       <span style={styles.timeLabel}>
                         {formatMessageTime(msg.created_at)}
                       </span>
                       {isMe && (
-                        <CheckCheck size={13} color="var(--color-wax-red)" />
+                        <span
+                          style={styles.statusTickWrapper}
+                          data-testid={`status-${getMessageStatus(msg)}`}
+                          title={
+                            getMessageStatus(msg) === 'read'
+                              ? 'Read'
+                              : getMessageStatus(msg) === 'delivered'
+                              ? 'Delivered'
+                              : 'Sent'
+                          }
+                        >
+                          {getMessageStatus(msg) === 'read' ? (
+                            <CheckCheck size={13} color="var(--color-wax-red)" />
+                          ) : getMessageStatus(msg) === 'delivered' ? (
+                            <CheckCheck size={13} color="#8c7b6c" />
+                          ) : (
+                            <Check size={13} color="#8c7b6c" />
+                          )}
+                        </span>
                       )}
                     </div>
                   </div>
+
+                  {/* My Profile Seal Avatar */}
+                  {isMe && (
+                    <div
+                      style={{
+                        ...styles.sealAvatar,
+                        background: isSenderN
+                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
+                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
+                        borderColor: isSenderN ? '#dfb86c' : '#d45d6e',
+                      }}
+                      title={isSenderN ? 'Profile N (You)' : 'Profile H (You)'}
+                      data-testid={`avatar-me-${msg.sender}`}
+                    >
+                      <span>{msg.sender}</span>
+                    </div>
+                  )}
                 </div>
               </React.Fragment>
             );
@@ -526,8 +643,25 @@ const styles = {
   messageRow: {
     display: 'flex',
     alignItems: 'flex-end',
-    gap: '12px',
+    gap: '10px',
     width: '100%',
+  },
+  sealAvatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    color: '#ffffff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'var(--font-title)',
+    fontSize: '16px',
+    fontWeight: '700',
+    border: '2px solid rgba(255, 255, 255, 0.85)',
+    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.28), inset 0 0 6px rgba(0, 0, 0, 0.25)',
+    flexShrink: 0,
+    marginBottom: '4px',
+    userSelect: 'none',
   },
   bubbleWrapper: {
     display: 'flex',
@@ -580,7 +714,7 @@ const styles = {
   metaRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: '4px',
     marginTop: '4px',
     padding: '0 4px',
   },
@@ -589,6 +723,11 @@ const styles = {
     fontSize: '13px',
     fontStyle: 'italic',
     color: 'var(--color-ink-muted)',
+  },
+  statusTickWrapper: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    marginLeft: '2px',
   },
   sealIcon: {
     display: 'flex',
