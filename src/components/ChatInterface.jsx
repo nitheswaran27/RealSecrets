@@ -278,10 +278,10 @@ export default function ChatInterface({
 
   return (
     <div style={styles.container}>
-      {/* 1. Exactly Styled Header Banner with nhlogo & navigation */}
+      {/* Exactly Styled Header Banner with nhlogo & navigation */}
       <HeaderBanner />
 
-      {/* 2. Main Scroll Room (Chat Messages Area) */}
+      {/* Main Scroll Room (Chat Messages Area) */}
       <main style={styles.chatArea} id="chat-messages-container">
 
         {/* Error message banner */}

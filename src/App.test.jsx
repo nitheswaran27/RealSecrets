@@ -139,6 +139,9 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     expect(screen.queryByText(/Lock Seal/i)).not.toBeInTheDocument();
     expect(document.getElementById('switch-profile-button')).toBeNull();
     expect(document.getElementById('security-info-button')).toBeNull();
+
+    // Verify HeaderBanner appears in ChatInterface
+    expect(document.querySelector('.parchment-header-banner')).toBeInTheDocument();
   });
 
   it('automatically unlocks chat directly when DOB is 27/09/2006, displays "You" above sent message and no Profile labels', async () => {
