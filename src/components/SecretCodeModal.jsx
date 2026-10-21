@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import HeaderBanner from './HeaderBanner.jsx';
 import nhLogo from '../assets/nhlogo.webp';
-import { Eye, EyeOff, ShieldCheck, AlertCircle, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, AlertCircle, KeyRound, Calendar } from 'lucide-react';
+
+import { parseProfileFromDob } from '../services/identity.js';
 
 export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }) {
   const [code, setCode] = useState('');
+  const [dob, setDob] = useState('');
   const [showCode, setShowCode] = useState(false);
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
@@ -14,9 +17,28 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
     inputRef.current?.focus();
   }, []);
 
+  const handleDobChange = (e) => {
+    const rawVal = e.target.value;
+    // Auto-format digits to DD/MM/YYYY
+    const digits = rawVal.replace(/\D/g, '').slice(0, 8);
+    let formatted = rawVal;
+    if (/^\d+$/.test(rawVal.replace(/\//g, ''))) {
+      if (digits.length <= 2) {
+        formatted = digits;
+      } else if (digits.length <= 4) {
+        formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      } else {
+        formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+      }
+    }
+    setDob(formatted);
+    if (error) setError('');
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const cleanCode = code.trim();
+    const cleanDob = dob.trim();
 
     if (!cleanCode) {
       setError('Please inscribe the sacred passkey.');
@@ -25,15 +47,31 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
     }
 
     const validCode = import.meta.env.VITE_SECRET_CODE || defaultCode;
-    if (cleanCode === validCode) {
-      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
-      setError('');
-      onUnlock(cleanCode);
-    } else {
+    if (cleanCode !== validCode) {
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([40, 60, 40]);
       setError('The secret code is incorrect. The seal remains unbroken.');
       triggerShake();
+      return;
     }
+
+    if (!cleanDob) {
+      setError('Please inscribe your celestial Date of Birth (DD/MM/YYYY).');
+      triggerShake();
+      return;
+    }
+
+    const detectedProfile = parseProfileFromDob(cleanDob);
+    if (!detectedProfile) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([40, 60, 40]);
+      setError('This date of birth is not recognized by the sacred seal.');
+      triggerShake();
+      return;
+    }
+
+    // Success: unlock with the identified profile
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
+    setError('');
+    onUnlock(cleanCode, detectedProfile);
   };
 
   const triggerShake = () => {
@@ -70,58 +108,85 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
           <p style={styles.introParagraph}>
             Only those who hold the ancient cipher may unlock the private correspondence
             between <strong>Profile N</strong> and <strong>Profile H</strong>.
-            Inscribe the secret passkey below to break the seal and reveal the hidden scrolls...
+            Inscribe the secret passkey and your celestial date of birth to break the seal...
           </p>
-
-          {/* Prompt Callout (Matches "Looking to continue your own journey?") */}
-          <h2 style={styles.journeyPrompt}>
-            Ready to continue your secret journey?
-          </h2>
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.inputWrapper}>
-              <input
-                ref={inputRef}
-                type={showCode ? 'text' : 'password'}
-                value={code}
-                onChange={(e) => {
-                  setCode(e.target.value);
-                  if (error) setError('');
-                }}
-                placeholder="Inscribe the secret code..."
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck="false"
-                enterKeyHint="go"
-                className="antique-input"
-                style={styles.secretInput}
-                id="secret-code-input"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCode(!showCode)}
-                style={styles.eyeBtn}
-                title={showCode ? 'Conceal passkey' : 'Reveal passkey'}
-                tabIndex={-1}
-              >
-                {showCode ? (
-                  <EyeOff size={18} color="var(--color-ink-muted)" />
-                ) : (
-                  <Eye size={18} color="var(--color-ink-muted)" />
-                )}
-              </button>
+            {/* Box 1: Secret Code Input */}
+            <div style={styles.fieldGroup}>
+              <label htmlFor="secret-code-input" style={styles.fieldLabel}>
+                SECRET PASSKEY
+              </label>
+              <div style={styles.inputWrapper}>
+                <input
+                  ref={inputRef}
+                  type={showCode ? 'text' : 'password'}
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    if (error) setError('');
+                  }}
+                  placeholder="Inscribe the secret passkey..."
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  enterKeyHint="next"
+                  className="antique-input"
+                  style={styles.secretInput}
+                  id="secret-code-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCode(!showCode)}
+                  style={styles.eyeBtn}
+                  title={showCode ? 'Conceal passkey' : 'Reveal passkey'}
+                  tabIndex={-1}
+                >
+                  {showCode ? (
+                    <EyeOff size={18} color="var(--color-ink-muted)" />
+                  ) : (
+                    <Eye size={18} color="var(--color-ink-muted)" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Box 2: Harry Potter Theme Date of Birth Input */}
+            <div style={styles.fieldGroup}>
+              <label htmlFor="dob-input" style={styles.fieldLabel}>
+                <Calendar size={13} style={{ marginRight: '6px' }} />
+                DATE OF BIRTH (DD/MM/YYYY)
+              </label>
+              <div style={styles.inputWrapper}>
+                <input
+                  type="text"
+                  value={dob}
+                  onChange={handleDobChange}
+                  placeholder="DD/MM/YYYY"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  enterKeyHint="go"
+                  className="antique-input"
+                  style={styles.dobInput}
+                  id="dob-input"
+                />
+              </div>
+              <span style={styles.dobHint}>
+                Your date of birth automatically reveals your keeper profile (N or H).
+              </span>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div style={styles.errorBox} className="animate-fade-in">
+              <div style={styles.errorBox} className="animate-fade-in" id="auth-error-message">
                 <AlertCircle size={16} color="var(--color-wax-red)" />
                 <span>{error}</span>
               </div>
             )}
 
-            {/* The Secret Framed Burgundy Button (Matches "EXPLORE THE SECRET STORE") */}
+            {/* The Secret Framed Burgundy Button */}
             <div style={styles.buttonRow}>
               <button
                 type="submit"
@@ -163,12 +228,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '40px 20px',
+    padding: '30px 16px',
   },
   cardContainer: {
     width: '100%',
-    maxWidth: '720px',
-    padding: '50px 48px',
+    maxWidth: '680px',
+    padding: '44px 38px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -177,11 +242,11 @@ const styles = {
     background: 'rgba(255, 252, 246, 0.94)',
   },
   waxSealCenter: {
-    marginBottom: '20px',
+    marginBottom: '16px',
   },
   waxSealRing: {
-    width: '74px',
-    height: '74px',
+    width: '70px',
+    height: '70px',
     borderRadius: '12px',
     background: 'radial-gradient(circle, #1a0f05 0%, #000000 100%)',
     border: '2px solid #b38734',
@@ -189,7 +254,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '6px',
+    padding: '5px',
   },
   sealImg: {
     width: '100%',
@@ -197,34 +262,43 @@ const styles = {
     objectFit: 'contain',
   },
   headingTitle: {
-    fontSize: '32px',
-    letterSpacing: '0.18em',
-    marginBottom: '18px',
+    fontSize: '30px',
+    letterSpacing: '0.16em',
+    marginBottom: '14px',
     color: '#9c7429',
   },
   introParagraph: {
     fontFamily: 'var(--font-body)',
-    fontSize: '20px',
-    lineHeight: '1.6',
+    fontSize: '19px',
+    lineHeight: '1.55',
     color: 'var(--color-ink-secondary)',
-    maxWidth: '560px',
-    marginBottom: '28px',
-  },
-  journeyPrompt: {
-    fontFamily: 'var(--font-heading)',
-    fontSize: '17px',
-    fontWeight: '700',
-    letterSpacing: '0.06em',
-    color: 'var(--color-ink)',
+    maxWidth: '540px',
     marginBottom: '24px',
   },
   form: {
     width: '100%',
-    maxWidth: '460px',
+    maxWidth: '440px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '18px',
+    gap: '16px',
+  },
+  fieldGroup: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '6px',
+  },
+  fieldLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    fontFamily: 'var(--font-heading)',
+    fontSize: '11px',
+    fontWeight: '700',
+    letterSpacing: '0.12em',
+    color: 'var(--color-ink-secondary)',
+    textTransform: 'uppercase',
   },
   inputWrapper: {
     position: 'relative',
@@ -232,11 +306,29 @@ const styles = {
   },
   secretInput: {
     width: '100%',
-    height: '52px',
-    padding: '0 48px 0 18px',
+    height: '50px',
+    padding: '0 48px 0 16px',
     textAlign: 'center',
-    letterSpacing: '0.1em',
+    letterSpacing: '0.08em',
+    fontSize: '17px',
+  },
+  dobInput: {
+    width: '100%',
+    height: '50px',
+    padding: '0 16px',
+    textAlign: 'center',
+    letterSpacing: '0.12em',
     fontSize: '18px',
+    fontFamily: 'var(--font-heading)',
+    fontWeight: '600',
+  },
+  dobHint: {
+    fontSize: '12px',
+    fontFamily: 'var(--font-body)',
+    fontStyle: 'italic',
+    color: 'var(--color-ink-muted)',
+    marginTop: '2px',
+    textAlign: 'left',
   },
   eyeBtn: {
     position: 'absolute',
@@ -255,26 +347,28 @@ const styles = {
     gap: '8px',
     color: 'var(--color-wax-red)',
     fontFamily: 'var(--font-body)',
-    fontSize: '17px',
+    fontSize: '16px',
     fontStyle: 'italic',
+    textAlign: 'center',
   },
   buttonRow: {
-    marginTop: '6px',
+    marginTop: '8px',
+    width: '100%',
   },
   submitBtn: {
-    minWidth: '260px',
+    width: '100%',
   },
   dividerLine: {
     width: '80%',
     height: '1px',
     background: 'linear-gradient(to right, transparent, rgba(179, 135, 52, 0.4), transparent)',
-    margin: '36px 0 20px 0',
+    margin: '30px 0 16px 0',
   },
   securitySealFooter: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    fontSize: '13px',
+    fontSize: '12px',
     fontFamily: 'var(--font-heading)',
     letterSpacing: '0.08em',
     color: 'var(--color-ink-muted)',

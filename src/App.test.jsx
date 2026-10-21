@@ -2,28 +2,56 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import App from './App.jsx';
+import { parseProfileFromDob } from './services/identity.js';
 
-describe('Realsecrets The Secret & Harry Potter Theme Flow', () => {
+describe('Realsecrets Date-of-Birth Identity Flow', () => {
   beforeEach(() => {
     sessionStorage.clear();
     localStorage.clear();
   });
 
-  it('renders Screen 1 (Secret Code Modal) with The Secret theme by default', () => {
+  describe('parseProfileFromDob helper', () => {
+    it('accurately identifies Profile H from 02/05/2007 in multiple formats', () => {
+      expect(parseProfileFromDob('02/05/2007')).toBe('H');
+      expect(parseProfileFromDob('02-05-2007')).toBe('H');
+      expect(parseProfileFromDob('2/5/2007')).toBe('H');
+      expect(parseProfileFromDob('2007-05-02')).toBe('H');
+      expect(parseProfileFromDob('02052007')).toBe('H');
+    });
+
+    it('accurately identifies Profile N from 27/09/2006 in multiple formats', () => {
+      expect(parseProfileFromDob('27/09/2006')).toBe('N');
+      expect(parseProfileFromDob('27-09-2006')).toBe('N');
+      expect(parseProfileFromDob('27/9/2006')).toBe('N');
+      expect(parseProfileFromDob('2006-09-27')).toBe('N');
+      expect(parseProfileFromDob('27092006')).toBe('N');
+    });
+
+    it('returns null for unrecognized birth dates', () => {
+      expect(parseProfileFromDob('15/08/1995')).toBeNull();
+      expect(parseProfileFromDob('01/01/2000')).toBeNull();
+      expect(parseProfileFromDob('')).toBeNull();
+    });
+  });
+
+  it('renders Secret Code and Date of Birth inputs by default', () => {
     render(<App />);
 
     expect(screen.getByText('ENTER THE SECRET CODE')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /EXPLORE THE SECRET/i })).toBeInTheDocument();
-    expect(document.getElementById('website-logo')).toBeInTheDocument();
+    expect(document.getElementById('secret-code-input')).toBeInTheDocument();
+    expect(document.getElementById('dob-input')).toBeInTheDocument();
+    expect(document.getElementById('continue-button')).toBeInTheDocument();
   });
 
-  it('shows friendly error message when incorrect secret code is entered', async () => {
+  it('shows error if secret code is incorrect', async () => {
     render(<App />);
 
-    const input = document.getElementById('secret-code-input');
+    const codeInput = document.getElementById('secret-code-input');
+    const dobInput = document.getElementById('dob-input');
     const continueBtn = document.getElementById('continue-button');
 
-    fireEvent.change(input, { target: { value: 'wrongcode' } });
+    fireEvent.change(codeInput, { target: { value: 'wrongpass' } });
+    fireEvent.change(dobInput, { target: { value: '02/05/2007' } });
     fireEvent.click(continueBtn);
 
     await waitFor(() => {
@@ -33,103 +61,87 @@ describe('Realsecrets The Secret & Harry Potter Theme Flow', () => {
     });
   });
 
-  it('unlocks and displays Screen 2 (Who are you?) when correct code is entered', async () => {
+  it('shows error if date of birth does not match either keeper', async () => {
     render(<App />);
 
-    const input = document.getElementById('secret-code-input');
+    const codeInput = document.getElementById('secret-code-input');
+    const dobInput = document.getElementById('dob-input');
     const continueBtn = document.getElementById('continue-button');
 
-    fireEvent.change(input, { target: { value: 'bepositive' } });
+    fireEvent.change(codeInput, { target: { value: 'bepositive' } });
+    fireEvent.change(dobInput, { target: { value: '10/10/2000' } });
     fireEvent.click(continueBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('WHO ARE YOU?')).toBeInTheDocument();
-      expect(document.getElementById('profile-btn-n')).toBeInTheDocument();
-      expect(document.getElementById('profile-btn-h')).toBeInTheDocument();
+      expect(
+        screen.getByText(/This date of birth is not recognized by the sacred seal./i)
+      ).toBeInTheDocument();
     });
   });
 
-  it('enters Profile N chat interface, sends encrypted message, switches to Profile H, and verifies conversation history', async () => {
+  it('automatically unlocks Profile H directly when DOB is 02/05/2007', async () => {
     render(<App />);
 
-    // 1. Enter secret code
-    const input = document.getElementById('secret-code-input');
+    const codeInput = document.getElementById('secret-code-input');
+    const dobInput = document.getElementById('dob-input');
     const continueBtn = document.getElementById('continue-button');
-    fireEvent.change(input, { target: { value: 'bepositive' } });
+
+    fireEvent.change(codeInput, { target: { value: 'bepositive' } });
+    fireEvent.change(dobInput, { target: { value: '02/05/2007' } });
     fireEvent.click(continueBtn);
 
-    // 2. Select Profile N
-    await waitFor(() => {
-      expect(document.getElementById('profile-btn-n')).toBeInTheDocument();
-    });
-    fireEvent.click(document.getElementById('profile-btn-n'));
-
-    // 3. Verify Screen 3 Chat Interface loaded for N
+    // Directly in Profile H's chat room!
     await waitFor(() => {
       expect(document.getElementById('message-input')).toBeInTheDocument();
-      expect(document.getElementById('nav-switch-profile')).toBeInTheDocument();
+      expect(document.getElementById('nav-switch-profile')).toHaveTextContent(/H ⇄ N/);
+    });
+  });
+
+  it('automatically unlocks Profile N directly when DOB is 27/09/2006, sends message, and allows switching', async () => {
+    render(<App />);
+
+    const codeInput = document.getElementById('secret-code-input');
+    const dobInput = document.getElementById('dob-input');
+    const continueBtn = document.getElementById('continue-button');
+
+    fireEvent.change(codeInput, { target: { value: 'bepositive' } });
+    fireEvent.change(dobInput, { target: { value: '27/09/2006' } });
+    fireEvent.click(continueBtn);
+
+    // Directly in Profile N's chat room!
+    await waitFor(() => {
+      expect(document.getElementById('message-input')).toBeInTheDocument();
+      expect(document.getElementById('nav-switch-profile')).toHaveTextContent(/N ⇄ H/);
     });
 
-    // 4. Send encrypted message as N
+    // Send encrypted message as N
     const messageInput = document.getElementById('message-input');
     fireEvent.change(messageInput, {
-      target: { value: 'Inscribed secret scroll from N to H.' },
+      target: { value: 'Secret parchment message from N to H.' },
     });
+    fireEvent.click(document.getElementById('send-message-button'));
 
-    const sendBtn = document.getElementById('send-message-button');
-    fireEvent.click(sendBtn);
-
-    // Verify message appears in conversation
     await waitFor(() => {
       expect(
-        screen.getByText('Inscribed secret scroll from N to H.')
+        screen.getByText('Secret parchment message from N to H.')
       ).toBeInTheDocument();
     });
 
-    // 5. Switch to Profile H
-    const switchProfileBtn = document.getElementById('switch-profile-button');
-    fireEvent.click(switchProfileBtn);
+    // Switch profile directly in-session
+    fireEvent.click(document.getElementById('switch-profile-button'));
 
-    // Back to Profile Selection
+    // Now chatting as H
     await waitFor(() => {
-      expect(screen.getByText('WHO ARE YOU?')).toBeInTheDocument();
+      expect(document.getElementById('nav-switch-profile')).toHaveTextContent(/H ⇄ N/);
     });
 
-    // Select Profile H
-    fireEvent.click(document.getElementById('profile-btn-h'));
+    // Lock session
+    fireEvent.click(document.getElementById('header-lock-button'));
 
-    // 6. Verify H sees N's previous message
-    await waitFor(() => {
-      expect(
-        screen.getByText('Inscribed secret scroll from N to H.')
-      ).toBeInTheDocument();
-    });
-
-    // Reply as H
-    const replyInput = document.getElementById('message-input');
-    fireEvent.change(replyInput, {
-      target: { value: 'Received the secret scroll with gratitude, N!' },
-    });
-    const replySendBtn = document.getElementById('send-message-button');
-    fireEvent.click(replySendBtn);
-
-    // Both messages should now be visible in conversation
-    await waitFor(() => {
-      expect(
-        screen.getByText('Inscribed secret scroll from N to H.')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText('Received the secret scroll with gratitude, N!')
-      ).toBeInTheDocument();
-    });
-
-    // 7. Lock session
-    const lockBtn = document.getElementById('header-lock-button');
-    fireEvent.click(lockBtn);
-
-    // Back to Screen 1
+    // Returns to Screen 1
     await waitFor(() => {
       expect(screen.getByText('ENTER THE SECRET CODE')).toBeInTheDocument();
+      expect(document.getElementById('dob-input')).toBeInTheDocument();
     });
   });
 });

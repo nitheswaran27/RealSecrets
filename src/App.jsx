@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import SecretCodeModal from './components/SecretCodeModal.jsx';
-import ProfileSelector from './components/ProfileSelector.jsx';
 import ChatInterface from './components/ChatInterface.jsx';
 import { clearKeyCache } from './services/crypto.js';
 
@@ -16,25 +15,24 @@ export default function App() {
     return sessionStorage.getItem(SESSION_PROFILE_KEY) || null;
   });
 
-  const isUnlocked = Boolean(secretCode);
+  const isUnlocked = Boolean(secretCode && currentProfile);
 
-  const handleUnlock = (verifiedCode) => {
+  // Authenticate with both Secret Code & DOB-determined Profile
+  const handleUnlock = (verifiedCode, detectedProfile) => {
     setSecretCode(verifiedCode);
+    setCurrentProfile(detectedProfile);
     sessionStorage.setItem(SESSION_CODE_KEY, verifiedCode);
+    sessionStorage.setItem(SESSION_PROFILE_KEY, detectedProfile);
   };
 
-  const handleSelectProfile = (profile) => {
-    if (profile === 'N' || profile === 'H') {
-      setCurrentProfile(profile);
-      sessionStorage.setItem(SESSION_PROFILE_KEY, profile);
-    }
-  };
-
+  // Allows switching directly between N and H once authenticated
   const handleSwitchProfile = () => {
-    setCurrentProfile(null);
-    sessionStorage.removeItem(SESSION_PROFILE_KEY);
+    const nextProfile = currentProfile === 'N' ? 'H' : 'N';
+    setCurrentProfile(nextProfile);
+    sessionStorage.setItem(SESSION_PROFILE_KEY, nextProfile);
   };
 
+  // Lock sanctum: wipes session and keys, returns to Secret Code + DOB screen
   const handleLock = () => {
     setSecretCode('');
     setCurrentProfile(null);
@@ -45,7 +43,7 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100dvh', overflow: 'hidden' }}>
-      {/* Screen 1: Secret Code Popup Modal */}
+      {/* Screen 1: Secret Code + Date of Birth Modal (Decides Profile N or H automatically) */}
       {!isUnlocked && (
         <SecretCodeModal
           onUnlock={handleUnlock}
@@ -53,16 +51,8 @@ export default function App() {
         />
       )}
 
-      {/* Screen 2: Profile Selection (Who are you? N or H) */}
-      {isUnlocked && !currentProfile && (
-        <ProfileSelector
-          onSelectProfile={handleSelectProfile}
-          onLock={handleLock}
-        />
-      )}
-
-      {/* Screen 3: Two-Person Private Chat Interface */}
-      {isUnlocked && currentProfile && (
+      {/* Screen 2: Direct access to Two-Person Private Chat Interface */}
+      {isUnlocked && (
         <ChatInterface
           currentProfile={currentProfile}
           secretCode={secretCode}
