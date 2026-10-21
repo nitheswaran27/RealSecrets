@@ -347,23 +347,6 @@ export default function ChatInterface({
                   className="animate-fade-in"
                   data-sender={msg.sender}
                 >
-                  {/* Partner Profile Seal Avatar */}
-                  {!isMe && (
-                    <div
-                      style={{
-                        ...styles.sealAvatar,
-                        background: isSenderN
-                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
-                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
-                        borderColor: isSenderN ? '#dfb86c' : '#d45d6e',
-                      }}
-                      title={isSenderN ? 'Profile N' : 'Profile H'}
-                      data-testid={`avatar-partner-${msg.sender}`}
-                    >
-                      <span>{msg.sender}</span>
-                    </div>
-                  )}
-
                   {/* Scroll Bubble */}
                   <div
                     style={{
@@ -433,23 +416,6 @@ export default function ChatInterface({
                       )}
                     </div>
                   </div>
-
-                  {/* My Profile Seal Avatar */}
-                  {isMe && (
-                    <div
-                      style={{
-                        ...styles.sealAvatar,
-                        background: isSenderN
-                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
-                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
-                        borderColor: isSenderN ? '#dfb86c' : '#d45d6e',
-                      }}
-                      title={isSenderN ? 'Profile N (You)' : 'Profile H (You)'}
-                      data-testid={`avatar-me-${msg.sender}`}
-                    >
-                      <span>{msg.sender}</span>
-                    </div>
-                  )}
                 </div>
               </React.Fragment>
             );
@@ -645,23 +611,6 @@ const styles = {
     alignItems: 'flex-end',
     gap: '10px',
     width: '100%',
-  },
-  sealAvatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    color: '#ffffff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'var(--font-title)',
-    fontSize: '16px',
-    fontWeight: '700',
-    border: '2px solid rgba(255, 255, 255, 0.85)',
-    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.28), inset 0 0 6px rgba(0, 0, 0, 0.25)',
-    flexShrink: 0,
-    marginBottom: '4px',
-    userSelect: 'none',
   },
   bubbleWrapper: {
     display: 'flex',
