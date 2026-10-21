@@ -204,6 +204,9 @@ export default function ChatInterface({
       });
 
       setInputText('');
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(18);
+      }
     } catch (err) {
       console.error('Send message failed:', err);
       setErrorMessage(`Failed to seal and send message: ${err.message}`);
@@ -211,6 +214,13 @@ export default function ChatInterface({
       setIsSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
+  };
+
+  const handleInputFocus = () => {
+    // Smooth scroll down when mobile virtual keyboard opens
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 280);
   };
 
   const handleKeyDown = (e) => {
@@ -402,9 +412,14 @@ export default function ChatInterface({
               ref={inputRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
+              onFocus={handleInputFocus}
               onKeyDown={handleKeyDown}
               placeholder={`Inscribe secret message as Profile ${currentProfile}... (Enter ↵ to dispatch)`}
               rows={1}
+              enterKeyHint="send"
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              autoComplete="off"
               className="antique-input"
               style={styles.composerInput}
               id="message-input"
@@ -499,7 +514,7 @@ export default function ChatInterface({
 const styles = {
   container: {
     width: '100vw',
-    height: '100vh',
+    height: '100dvh',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -715,7 +730,7 @@ const styles = {
     alignItems: 'center',
   },
   footerDesk: {
-    padding: '16px 20px',
+    padding: '12px 16px max(14px, env(safe-area-inset-bottom, 14px)) 16px',
     background: 'rgba(253, 250, 244, 0.95)',
     borderTop: '2px solid rgba(179, 135, 52, 0.35)',
     boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)',

@@ -44,7 +44,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ width: '100vw', height: '100dvh', overflow: 'hidden' }}>
       {/* Screen 1: Secret Code Popup Modal */}
       {!isUnlocked && (
         <SecretCodeModal

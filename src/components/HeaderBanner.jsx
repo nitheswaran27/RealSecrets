@@ -41,17 +41,20 @@ export default function HeaderBanner({
 
         {/* Center: Navigation Links in The Secret style */}
         <nav style={styles.navMenu}>
-          <span style={styles.navItem} onClick={onOpenSecurity}>EXPLORE</span>
-          <span style={styles.navItem} onClick={onOpenSecurity}>THE CIPHER</span>
-          <span style={styles.navItem}>SANCTUM</span>
-          <span style={styles.navItem}>SCROLLS</span>
+          <span className="desktop-only-nav" style={styles.navItem} onClick={onOpenSecurity}>EXPLORE</span>
+          <span className="desktop-only-nav" style={styles.navItem} onClick={onOpenSecurity}>THE CIPHER</span>
+          <span className="desktop-only-nav" style={styles.navItem}>SANCTUM</span>
+          <span className="desktop-only-nav" style={styles.navItem}>SCROLLS</span>
           {currentProfile && (
             <span
               style={{ ...styles.navItem, color: '#8b1e2d', fontWeight: 700 }}
-              onClick={onSwitchProfile}
+              onClick={() => {
+                if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+                onSwitchProfile?.();
+              }}
               id="nav-switch-profile"
             >
-              PROFILE {currentProfile} ⇄ {partnerProfile}
+              {currentProfile} ⇄ {partnerProfile}
             </span>
           )}
         </nav>

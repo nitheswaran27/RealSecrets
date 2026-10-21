@@ -26,9 +26,11 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
 
     const validCode = import.meta.env.VITE_SECRET_CODE || defaultCode;
     if (cleanCode === validCode) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(25);
       setError('');
       onUnlock(cleanCode);
     } else {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate([40, 60, 40]);
       setError('The secret code is incorrect. The seal remains unbroken.');
       triggerShake();
     }
@@ -91,6 +93,7 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck="false"
+                enterKeyHint="go"
                 className="antique-input"
                 style={styles.secretInput}
                 id="secret-code-input"
@@ -149,7 +152,7 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
 const styles = {
   pageContainer: {
     width: '100vw',
-    height: '100vh',
+    height: '100dvh',
     display: 'flex',
     flexDirection: 'column',
     overflowY: 'auto',

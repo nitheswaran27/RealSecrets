@@ -62,7 +62,10 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
                 </p>
               </div>
               <button
-                onClick={() => onSelectProfile('N')}
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(15);
+                  onSelectProfile('N');
+                }}
                 id="profile-btn-n"
                 className="secret-button-framed"
                 style={styles.profileBtn}
@@ -84,7 +87,10 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
                 </p>
               </div>
               <button
-                onClick={() => onSelectProfile('H')}
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(15);
+                  onSelectProfile('H');
+                }}
                 id="profile-btn-h"
                 className="secret-button-framed"
                 style={styles.profileBtn}
@@ -111,7 +117,7 @@ export default function ProfileSelector({ onSelectProfile, onLock }) {
 const styles = {
   pageContainer: {
     width: '100vw',
-    height: '100vh',
+    height: '100dvh',
     display: 'flex',
     flexDirection: 'column',
     overflowY: 'auto',
