@@ -43,6 +43,18 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     expect(document.getElementById('continue-button')).toBeInTheDocument();
   });
 
+  it('always opens fresh and locked even if legacy keys exist in sessionStorage', () => {
+    sessionStorage.setItem('realsecrets_session_code', 'bepositive');
+    sessionStorage.setItem('realsecrets_session_profile', 'N');
+
+    render(<App />);
+
+    // Must still show the secret code modal, never auto-unlock to the chat
+    expect(screen.getByText('ENTER THE SECRET CODE')).toBeInTheDocument();
+    expect(document.getElementById('secret-code-input')).toBeInTheDocument();
+    expect(document.getElementById('message-input')).toBeNull();
+  });
+
   it('does not accept uppercase letters and spaces in the secret passkey input', () => {
     render(<App />);
 
