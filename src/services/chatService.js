@@ -147,6 +147,54 @@ export function broadcastReadReceipt({ reader, timestamp }) {
 }
 
 /**
+ * Clears all chat messages and read receipts from storage (local mock or Supabase)
+ */
+export async function clearAllMessages() {
+  // 1. Wipe local storage
+  try {
+    localStorage.removeItem(MOCK_STORAGE_KEY);
+    localStorage.removeItem('realsecrets_last_read_N');
+    localStorage.removeItem('realsecrets_last_read_H');
+  } catch (err) {
+    console.error('Failed to clear local mock storage', err);
+  }
+
+  // 2. Broadcast clear event to other tabs
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const channel = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
+      channel.postMessage({ type: 'CLEAR_MESSAGES' });
+      channel.close();
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Clear Supabase database if configured
+  if (isSupabaseConfigured() && supabase) {
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      throw new Error(`Failed to clear Supabase messages: ${error.message}`);
+    }
+
+    try {
+      const channel = supabase.channel('realsecrets_realtime');
+      channel.send({
+        type: 'broadcast',
+        event: 'CLEAR_MESSAGES',
+        payload: { timestamp: Date.now() },
+      });
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/**
  * Subscribes to real-time incoming messages and read receipts
  * @param {Function} onMessage Callback invoked with the new encrypted message object
  * @param {Function} [onStatusChange] Callback invoked with connection status ('SUBSCRIBED', 'OFFLINE', etc.)

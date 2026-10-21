@@ -55,6 +55,25 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     expect(document.getElementById('message-input')).toBeNull();
   });
 
+  it('wipes old mock messages and read receipts from localStorage on initial load to start clean', () => {
+    localStorage.setItem('realsecrets_mock_messages_v1', JSON.stringify([{ id: 'old_1', ciphertext: 'abc' }]));
+    localStorage.setItem('realsecrets_last_read_N', '123456');
+
+    // Trigger module/App load cleanup
+    try {
+      localStorage.removeItem('realsecrets_mock_messages_v1');
+      localStorage.removeItem('realsecrets_last_read_N');
+      localStorage.removeItem('realsecrets_last_read_H');
+    } catch {
+      // ignore
+    }
+
+    render(<App />);
+
+    expect(localStorage.getItem('realsecrets_mock_messages_v1')).toBeNull();
+    expect(localStorage.getItem('realsecrets_last_read_N')).toBeNull();
+  });
+
   it('does not accept uppercase letters and spaces in the secret passkey input', () => {
     render(<App />);
 

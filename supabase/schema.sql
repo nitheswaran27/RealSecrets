@@ -51,11 +51,16 @@ CREATE POLICY "Prevent updates to messages"
     FOR UPDATE
     USING (false);
 
+-- Policy: Allow deleting messages when clearing correspondence (restricted to identities N or H)
 DROP POLICY IF EXISTS "Prevent deletes to messages" ON public.messages;
-CREATE POLICY "Prevent deletes to messages"
+DROP POLICY IF EXISTS "Allow delete for N and H" ON public.messages;
+CREATE POLICY "Allow delete for N and H"
     ON public.messages
     FOR DELETE
-    USING (false);
+    USING (sender IN ('N', 'H'));
+
+-- NOTE: To immediately purge all messages directly via Supabase SQL Editor:
+-- TRUNCATE TABLE public.messages;
 
 -- 6. Enable Supabase Realtime for instant push updates
 -- Ensure messages table is part of the supabase_realtime publication

@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import SecretCodeModal from './components/SecretCodeModal.jsx';
 import ChatInterface from './components/ChatInterface.jsx';
 
-// Wipe any legacy stored session keys on load so the app always opens fresh
+// Wipe any legacy stored session keys and old mock chat messages on load so the app always opens fresh and clean
 try {
   sessionStorage.removeItem('realsecrets_session_code');
   sessionStorage.removeItem('realsecrets_session_profile');
+  localStorage.removeItem('realsecrets_mock_messages_v1');
+  localStorage.removeItem('realsecrets_last_read_N');
+  localStorage.removeItem('realsecrets_last_read_H');
 } catch {
   // ignore
 }
