@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import HeaderBanner from './HeaderBanner.jsx';
-import nhLogo from '../assets/nhlogo.webp';
 import { Eye, EyeOff, ShieldCheck, AlertCircle, KeyRound, Calendar } from 'lucide-react';
 
 import { parseProfileFromDob } from '../services/identity.js';
@@ -16,6 +15,54 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Disallow uppercase letters and spaces in the secret passkey
+  const sanitizePasskey = (val) => val.replace(/[A-Z\s]/g, '');
+
+  const handleCodeChange = (e) => {
+    const sanitized = sanitizePasskey(e.target.value);
+    setCode(sanitized);
+    if (error) setError('');
+  };
+
+  const handleCodeKeyDown = (e) => {
+    // Reject space
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      return;
+    }
+    // Reject single uppercase letters (typed with Shift or Caps Lock)
+    if (
+      e.key &&
+      e.key.length === 1 &&
+      /[A-Z]/.test(e.key) &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey
+    ) {
+      e.preventDefault();
+    }
+  };
+
+  const handleCodeBeforeInput = (e) => {
+    if (e.data && /[A-Z\s]/.test(e.data)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleCodePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData?.getData('text') || '';
+    const cleanPasted = sanitizePasskey(pastedText);
+    if (!cleanPasted) return;
+
+    const input = e.target;
+    const start = input.selectionStart ?? code.length;
+    const end = input.selectionEnd ?? code.length;
+    const nextVal = sanitizePasskey(code.slice(0, start) + cleanPasted + code.slice(end));
+    setCode(nextVal);
+    if (error) setError('');
+  };
 
   const handleDobChange = (e) => {
     const rawVal = e.target.value;
@@ -93,11 +140,11 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
           style={styles.cardContainer}
         >
           {/* Hexagonal Gold N&H Seal */}
-          <div style={styles.waxSealCenter}>
+          {/* <div style={styles.waxSealCenter}>
             <div style={styles.waxSealRing}>
               <img src={nhLogo} alt="NH Seal" style={styles.sealImg} />
             </div>
-          </div>
+          </div> */}
 
           {/* Golden Roman Heading (Matches "READ THE SECRET STORIES") */}
           <h1 className="secret-heading-gold" style={styles.headingTitle}>
@@ -108,7 +155,7 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
           <p style={styles.introParagraph}>
             No distance fades a genuine connection, and no silence changes where we began <br />
 
-            Inscribe the secret passkey and your celestial date of birth to break the seal...
+            Enter the name of our quiet group to open the space kept safe across the years.
           </p>
 
           {/* Form */}
@@ -123,11 +170,12 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
                   ref={inputRef}
                   type={showCode ? 'text' : 'password'}
                   value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value);
-                    if (error) setError('');
-                  }}
+                  onChange={handleCodeChange}
+                  onKeyDown={handleCodeKeyDown}
+                  onBeforeInput={handleCodeBeforeInput}
+                  onPaste={handleCodePaste}
                   placeholder="Inscribe the secret passkey..."
+                  autoCapitalize="none"
                   autoComplete="off"
                   autoCorrect="off"
                   spellCheck="false"
@@ -205,8 +253,8 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
 
           {/* Footer Cryptographic Seal */}
           <div style={styles.securitySealFooter}>
-            <ShieldCheck size={16} color="var(--color-gold)" />
-            <span>End-to-End Encrypted with AES-256-GCM & PBKDF2</span>
+
+            <span>Whenever life gets noisy and you need a quiet corner to speak, consider this space waiting for you.</span>
           </div>
         </div>
       </main>

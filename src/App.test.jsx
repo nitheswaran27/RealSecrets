@@ -43,6 +43,28 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     expect(document.getElementById('continue-button')).toBeInTheDocument();
   });
 
+  it('does not accept uppercase letters and spaces in the secret passkey input', () => {
+    render(<App />);
+
+    const codeInput = document.getElementById('secret-code-input');
+
+    // Attempt to type uppercase letters and spaces ('B' and 'P' stripped, spaces stripped)
+    fireEvent.change(codeInput, { target: { value: 'Be Positive 123' } });
+    expect(codeInput.value).toBe('eositive123');
+
+    // Attempt to type pure spaces
+    fireEvent.change(codeInput, { target: { value: '   ' } });
+    expect(codeInput.value).toBe('');
+
+    // Attempt to type uppercase only
+    fireEvent.change(codeInput, { target: { value: 'UPPERCASE' } });
+    expect(codeInput.value).toBe('');
+
+    // Allowed lowercase word
+    fireEvent.change(codeInput, { target: { value: 'bepositive' } });
+    expect(codeInput.value).toBe('bepositive');
+  });
+
   it('shows error if secret code is incorrect', async () => {
     render(<App />);
 

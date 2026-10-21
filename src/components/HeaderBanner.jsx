@@ -1,6 +1,5 @@
 import React from 'react';
 import nhLogo from '../assets/nhlogo.webp';
-import { Search } from 'lucide-react';
 
 export default function HeaderBanner() {
   return (
@@ -23,7 +22,7 @@ export default function HeaderBanner() {
             />
           </div>
           <div style={styles.logoTitles}>
-            <span style={styles.logoMainTitle}>Realsecrets</span>
+            <span style={styles.logoMainTitle}>Real secrets</span>
             <span style={styles.logoSubtitle}>The Secret Correspondence</span>
           </div>
         </div>
