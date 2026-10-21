@@ -2,11 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import HeaderBanner from './HeaderBanner.jsx';
 import nhLogo from '../assets/nhlogo.webp';
 import {
-  Lock,
-  ShieldCheck,
   RefreshCw,
   AlertTriangle,
-  Info,
   CheckCheck,
   Feather,
 } from 'lucide-react';
@@ -16,7 +13,6 @@ import {
   sendEncryptedMessage,
   subscribeToMessages,
 } from '../services/chatService.js';
-import { isSupabaseConfigured } from '../services/supabaseClient.js';
 
 function formatMessageTime(isoString) {
   try {
@@ -47,17 +43,13 @@ function formatMessageDate(isoString) {
 export default function ChatInterface({
   currentProfile,
   secretCode,
-  onSwitchProfile,
-  onLock,
 }) {
   const partnerProfile = currentProfile === 'N' ? 'H' : 'N';
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('CONNECTING');
   const [errorMessage, setErrorMessage] = useState('');
-  const [showSecurityModal, setShowSecurityModal] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -151,11 +143,6 @@ export default function ChatInterface({
             return [...prev, decrypted];
           });
         }
-      },
-      (status) => {
-        if (isMounted) {
-          setConnectionStatus(status);
-        }
       }
     );
 
@@ -236,24 +223,10 @@ export default function ChatInterface({
       <HeaderBanner
         currentProfile={currentProfile}
         partnerProfile={partnerProfile}
-        onLock={onLock}
-        onSwitchProfile={onSwitchProfile}
-        onOpenSecurity={() => setShowSecurityModal(true)}
-        connectionStatus={connectionStatus}
       />
 
       {/* 2. Main Scroll Room (Chat Messages Area) */}
       <main style={styles.chatArea} id="chat-messages-container">
-        {/* Supabase status warning if in mock mode */}
-        {!isSupabaseConfigured() && (
-          <div style={styles.devNotice}>
-            <Info size={16} color="var(--color-gold)" />
-            <span>
-              Sanctum operating in local multi-tab sync mode. Inscribe Supabase credentials in{' '}
-              <code>.env</code> for cloud persistence.
-            </span>
-          </div>
-        )}
 
         {/* Error message banner */}
         {errorMessage && (
@@ -367,16 +340,10 @@ export default function ChatInterface({
                       <p style={styles.scrollText}>{msg.decryptedText}</p>
                     </div>
 
-                    {/* Meta info: Time and Cryptographic Seal */}
+                    {/* Meta info: Time */}
                     <div style={styles.metaRow}>
                       <span style={styles.timeLabel}>
                         {formatMessageTime(msg.created_at)}
-                      </span>
-                      <span
-                        style={styles.sealIcon}
-                        title="End-to-End Encrypted with AES-256-GCM"
-                      >
-                        <Lock size={11} color="var(--color-gold-dark)" />
                       </span>
                       {isMe && (
                         <CheckCheck size={13} color="var(--color-wax-red)" />
@@ -447,66 +414,11 @@ export default function ChatInterface({
 
         <div style={styles.deskFooter}>
           <div style={styles.e2eNotice}>
-            <ShieldCheck size={14} color="var(--color-gold)" />
-            <span>Client-side AES-256-GCM cipher active • Plaintext is never stored</span>
+            <span>The Secret Sanctum</span>
           </div>
           <span style={styles.shortcutTip}>Press Enter ↵ to Dispatch Scroll</span>
         </div>
       </footer>
-
-      {/* 4. Security & Cryptographic Details Modal */}
-      {showSecurityModal && (
-        <div style={styles.modalOverlay} onClick={() => setShowSecurityModal(false)}>
-          <div
-            className="parchment-card animate-fade-in"
-            style={styles.securityModal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={styles.secHeader}>
-              <div style={styles.secSealIcon}>
-                <img src={nhLogo} alt="NH Seal" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              </div>
-              <h3 className="secret-heading-gold" style={{ fontSize: '20px' }}>
-                THE SACRED CRYPTOGRAPHY
-              </h3>
-            </div>
-
-            <div style={styles.secBody}>
-              <div style={styles.secBox}>
-                <strong style={styles.secTitle}>End-to-End Encryption (AES-256-GCM)</strong>
-                <p>
-                  Every message is encrypted directly inside the browser using AES-256-GCM
-                  with a unique 96-bit cryptographic nonce and PBKDF2 (100,000 iterations).
-                  The Supabase database receives strictly ciphertext and nonces.
-                </p>
-              </div>
-
-              <div style={styles.secBox}>
-                <strong style={styles.secTitle}>PostgreSQL Row Level Security</strong>
-                <p>
-                  Database policies validate that only senders strictly identified as <code>N</code> or{' '}
-                  <code>H</code> are accepted. No third party accounts exist.
-                </p>
-              </div>
-
-              <div style={styles.secBox}>
-                <strong style={styles.secTitle}>Operational Privacy</strong>
-                <p>
-                  The encryption key exists only in volatile memory and is purged whenever the sanctum is locked.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowSecurityModal(false)}
-              className="secret-button-framed"
-              style={{ width: '100%' }}
-            >
-              SEAL ARCHIVE
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

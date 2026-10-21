@@ -79,7 +79,7 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     });
   });
 
-  it('automatically unlocks Profile H directly when DOB is 02/05/2007', async () => {
+  it('automatically unlocks Profile H directly when DOB is 02/05/2007 and removes unwanted controls', async () => {
     render(<App />);
 
     const codeInput = document.getElementById('secret-code-input');
@@ -93,11 +93,17 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     // Directly in Profile H's chat room!
     await waitFor(() => {
       expect(document.getElementById('message-input')).toBeInTheDocument();
-      expect(document.getElementById('nav-switch-profile')).toHaveTextContent(/H ⇄ N/);
+      expect(document.getElementById('nav-profile-label')).toHaveTextContent(/PROFILE H/i);
     });
+
+    // Verify removed elements: Local Synced, Lock Seal, Switch Identity, and Security Icon
+    expect(screen.queryByText(/Local Synced/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Lock Seal/i)).not.toBeInTheDocument();
+    expect(document.getElementById('switch-profile-button')).toBeNull();
+    expect(document.getElementById('security-info-button')).toBeNull();
   });
 
-  it('automatically unlocks Profile N directly when DOB is 27/09/2006, sends message, and allows switching', async () => {
+  it('automatically unlocks Profile N directly when DOB is 27/09/2006, sends encrypted message', async () => {
     render(<App />);
 
     const codeInput = document.getElementById('secret-code-input');
@@ -111,7 +117,7 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
     // Directly in Profile N's chat room!
     await waitFor(() => {
       expect(document.getElementById('message-input')).toBeInTheDocument();
-      expect(document.getElementById('nav-switch-profile')).toHaveTextContent(/N ⇄ H/);
+      expect(document.getElementById('nav-profile-label')).toHaveTextContent(/PROFILE N/i);
     });
 
     // Send encrypted message as N
@@ -125,23 +131,6 @@ describe('Realsecrets Date-of-Birth Identity Flow', () => {
       expect(
         screen.getByText('Secret parchment message from N to H.')
       ).toBeInTheDocument();
-    });
-
-    // Switch profile directly in-session
-    fireEvent.click(document.getElementById('switch-profile-button'));
-
-    // Now chatting as H
-    await waitFor(() => {
-      expect(document.getElementById('nav-switch-profile')).toHaveTextContent(/H ⇄ N/);
-    });
-
-    // Lock session
-    fireEvent.click(document.getElementById('header-lock-button'));
-
-    // Returns to Screen 1
-    await waitFor(() => {
-      expect(screen.getByText('ENTER THE SECRET CODE')).toBeInTheDocument();
-      expect(document.getElementById('dob-input')).toBeInTheDocument();
     });
   });
 });
