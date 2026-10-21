@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
+import HeaderBanner from './HeaderBanner.jsx';
+import nhLogo from '../assets/nhlogo.webp';
+import { Eye, EyeOff, ShieldCheck, AlertCircle, KeyRound } from 'lucide-react';
 
 export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }) {
   const [code, setCode] = useState('');
@@ -17,18 +19,17 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
     const cleanCode = code.trim();
 
     if (!cleanCode) {
-      setError('Please enter the secret code.');
+      setError('Please inscribe the sacred passkey.');
       triggerShake();
       return;
     }
 
-    // Verify secret code (matches configured code or default 'bepositive')
     const validCode = import.meta.env.VITE_SECRET_CODE || defaultCode;
     if (cleanCode === validCode) {
       setError('');
       onUnlock(cleanCode);
     } else {
-      setError('Incorrect secret code. Access denied.');
+      setError('The secret code is incorrect. The seal remains unbroken.');
       triggerShake();
     }
   };
@@ -41,176 +42,207 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
   };
 
   return (
-    <div style={styles.overlay}>
-      <div
-        className={`glass-panel ${isShaking ? 'animate-shake' : 'animate-fade-in'}`}
-        style={styles.modal}
-      >
-        {/* Glowing Shield Icon */}
-        <div style={styles.iconWrapper}>
-          <div style={styles.iconGlow} />
-          <div style={styles.iconCircle}>
-            <Lock size={28} color="#8b5cf6" strokeWidth={2.2} />
-          </div>
-        </div>
+    <div style={styles.pageContainer}>
+      {/* 1. Exactly Styled Header Banner */}
+      <HeaderBanner />
 
-        {/* Title & Subtitle */}
-        <h1 style={styles.title}>Realsecrets</h1>
-        <p style={styles.subtitle}>Enter the secret code</p>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputContainer}>
-            <input
-              ref={inputRef}
-              type={showCode ? 'text' : 'password'}
-              value={code}
-              onChange={(e) => {
-                setCode(e.target.value);
-                if (error) setError('');
-              }}
-              placeholder="••••••••••••"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck="false"
-              style={styles.input}
-              id="secret-code-input"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCode(!showCode)}
-              style={styles.eyeButton}
-              title={showCode ? 'Hide secret' : 'Show secret'}
-              tabIndex={-1}
-            >
-              {showCode ? (
-                <EyeOff size={18} color="var(--text-secondary)" />
-              ) : (
-                <Eye size={18} color="var(--text-secondary)" />
-              )}
-            </button>
-          </div>
-
-          {/* Friendly Error Message */}
-          {error && (
-            <div style={styles.errorBox} className="animate-fade-in">
-              <AlertCircle size={16} color="var(--accent-danger)" />
-              <span>{error}</span>
+      {/* 2. Main Body matching The Secret image layout */}
+      <main style={styles.mainContent}>
+        <div
+          className={`parchment-card ${isShaking ? 'animate-shake' : 'animate-fade-in'}`}
+          style={styles.cardContainer}
+        >
+          {/* Hexagonal Gold N&H Seal */}
+          <div style={styles.waxSealCenter}>
+            <div style={styles.waxSealRing}>
+              <img src={nhLogo} alt="NH Seal" style={styles.sealImg} />
             </div>
-          )}
+          </div>
 
-          {/* Continue Button */}
-          <button
-            type="submit"
-            id="continue-button"
-            style={styles.continueButton}
-          >
-            <span>Continue</span>
-            <ArrowRight size={18} />
-          </button>
-        </form>
+          {/* Golden Roman Heading (Matches "READ THE SECRET STORIES") */}
+          <h1 className="secret-heading-gold" style={styles.headingTitle}>
+            ENTER THE SECRET CODE
+          </h1>
 
-        {/* Subtle Security Badge */}
-        <div style={styles.footerNote}>
-          <ShieldCheck size={14} color="var(--accent-n)" />
-          <span>Client-Side End-to-End Encrypted (AES-256-GCM)</span>
+          {/* Introductory Literary Paragraph */}
+          <p style={styles.introParagraph}>
+            Only those who hold the ancient cipher may unlock the private correspondence
+            between <strong>Profile N</strong> and <strong>Profile H</strong>.
+            Inscribe the secret passkey below to break the seal and reveal the hidden scrolls...
+          </p>
+
+          {/* Prompt Callout (Matches "Looking to continue your own journey?") */}
+          <h2 style={styles.journeyPrompt}>
+            Ready to continue your secret journey?
+          </h2>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputWrapper}>
+              <input
+                ref={inputRef}
+                type={showCode ? 'text' : 'password'}
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  if (error) setError('');
+                }}
+                placeholder="Inscribe the secret code..."
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                className="antique-input"
+                style={styles.secretInput}
+                id="secret-code-input"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCode(!showCode)}
+                style={styles.eyeBtn}
+                title={showCode ? 'Conceal passkey' : 'Reveal passkey'}
+                tabIndex={-1}
+              >
+                {showCode ? (
+                  <EyeOff size={18} color="var(--color-ink-muted)" />
+                ) : (
+                  <Eye size={18} color="var(--color-ink-muted)" />
+                )}
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div style={styles.errorBox} className="animate-fade-in">
+                <AlertCircle size={16} color="var(--color-wax-red)" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* The Secret Framed Burgundy Button (Matches "EXPLORE THE SECRET STORE") */}
+            <div style={styles.buttonRow}>
+              <button
+                type="submit"
+                id="continue-button"
+                className="secret-button-framed"
+                style={styles.submitBtn}
+              >
+                <KeyRound size={16} />
+                <span>EXPLORE THE SECRET</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Engraved Divider Line */}
+          <div style={styles.dividerLine} />
+
+          {/* Footer Cryptographic Seal */}
+          <div style={styles.securitySealFooter}>
+            <ShieldCheck size={16} color="var(--color-gold)" />
+            <span>End-to-End Encrypted with AES-256-GCM & PBKDF2</span>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  pageContainer: {
+    width: '100vw',
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    background: 'radial-gradient(circle at center, #fdfbf7 0%, #ebe2d3 100%)',
+  },
+  mainContent: {
+    flex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '20px',
-    zIndex: 1000,
+    padding: '40px 20px',
   },
-  modal: {
+  cardContainer: {
     width: '100%',
-    maxWidth: '420px',
-    padding: '36px 32px',
+    maxWidth: '720px',
+    padding: '50px 48px',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     textAlign: 'center',
-    position: 'relative',
+    border: '1px solid #d4c2a7',
+    background: 'rgba(255, 252, 246, 0.94)',
   },
-  iconWrapper: {
-    position: 'relative',
-    marginBottom: '18px',
+  waxSealCenter: {
+    marginBottom: '20px',
   },
-  iconGlow: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '64px',
-    height: '64px',
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, transparent 70%)',
-    filter: 'blur(10px)',
-  },
-  iconCircle: {
-    position: 'relative',
-    width: '60px',
-    height: '60px',
-    borderRadius: '50%',
-    background: 'rgba(26, 29, 44, 0.95)',
-    border: '1px solid rgba(139, 92, 246, 0.35)',
+  waxSealRing: {
+    width: '74px',
+    height: '74px',
+    borderRadius: '12px',
+    background: 'radial-gradient(circle, #1a0f05 0%, #000000 100%)',
+    border: '2px solid #b38734',
+    boxShadow: '0 8px 24px rgba(70, 45, 15, 0.45), inset 0 0 10px rgba(179, 135, 52, 0.5)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 8px 24px -4px rgba(139, 92, 246, 0.25)',
+    padding: '6px',
   },
-  title: {
-    fontSize: '26px',
-    fontWeight: '700',
-    letterSpacing: '-0.02em',
-    marginBottom: '6px',
-    background: 'linear-gradient(135deg, #ffffff 40%, #94a3b8 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+  sealImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
   },
-  subtitle: {
-    fontSize: '15px',
-    color: 'var(--text-secondary)',
+  headingTitle: {
+    fontSize: '32px',
+    letterSpacing: '0.18em',
+    marginBottom: '18px',
+    color: '#9c7429',
+  },
+  introParagraph: {
+    fontFamily: 'var(--font-body)',
+    fontSize: '20px',
+    lineHeight: '1.6',
+    color: 'var(--color-ink-secondary)',
+    maxWidth: '560px',
     marginBottom: '28px',
+  },
+  journeyPrompt: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '17px',
+    fontWeight: '700',
+    letterSpacing: '0.06em',
+    color: 'var(--color-ink)',
+    marginBottom: '24px',
   },
   form: {
     width: '100%',
+    maxWidth: '460px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    alignItems: 'center',
+    gap: '18px',
   },
-  inputContainer: {
+  inputWrapper: {
     position: 'relative',
     width: '100%',
-    display: 'flex',
-    alignItems: 'center',
   },
-  input: {
+  secretInput: {
     width: '100%',
-    height: '50px',
+    height: '52px',
     padding: '0 48px 0 18px',
-    borderRadius: 'var(--radius-md)',
-    fontSize: '16px',
-    letterSpacing: '0.04em',
+    textAlign: 'center',
+    letterSpacing: '0.1em',
+    fontSize: '18px',
   },
-  eyeButton: {
+  eyeBtn: {
     position: 'absolute',
     right: '14px',
+    top: '50%',
+    transform: 'translateY(-50%)',
     background: 'transparent',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    border: 'none',
+    cursor: 'pointer',
     padding: '4px',
   },
   errorBox: {
@@ -218,36 +250,31 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    background: 'var(--accent-danger-bg)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    color: '#fca5a5',
-    padding: '10px 14px',
-    borderRadius: 'var(--radius-sm)',
-    fontSize: '13px',
-    fontWeight: '500',
+    color: 'var(--color-wax-red)',
+    fontFamily: 'var(--font-body)',
+    fontSize: '17px',
+    fontStyle: 'italic',
   },
-  continueButton: {
-    height: '50px',
-    width: '100%',
-    borderRadius: 'var(--radius-md)',
-    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-    color: '#ffffff',
-    fontSize: '15px',
-    fontWeight: '600',
+  buttonRow: {
+    marginTop: '6px',
+  },
+  submitBtn: {
+    minWidth: '260px',
+  },
+  dividerLine: {
+    width: '80%',
+    height: '1px',
+    background: 'linear-gradient(to right, transparent, rgba(179, 135, 52, 0.4), transparent)',
+    margin: '36px 0 20px 0',
+  },
+  securitySealFooter: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: '8px',
-    boxShadow: '0 8px 20px -4px rgba(109, 40, 217, 0.5)',
-    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-  },
-  footerNote: {
-    marginTop: '28px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '12px',
-    color: 'var(--text-muted)',
-    letterSpacing: '0.02em',
+    fontSize: '13px',
+    fontFamily: 'var(--font-heading)',
+    letterSpacing: '0.08em',
+    color: 'var(--color-ink-muted)',
+    textTransform: 'uppercase',
   },
 };

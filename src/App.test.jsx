@@ -3,33 +3,32 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import App from './App.jsx';
 
-describe('Realsecrets End-to-End Application Flow', () => {
+describe('Realsecrets The Secret & Harry Potter Theme Flow', () => {
   beforeEach(() => {
     sessionStorage.clear();
     localStorage.clear();
   });
 
-  it('renders Screen 1 (Secret Code Modal) by default', () => {
+  it('renders Screen 1 (Secret Code Modal) with The Secret theme by default', () => {
     render(<App />);
 
-    expect(screen.getByText('Realsecrets')).toBeInTheDocument();
-    expect(screen.getByText('Enter the secret code')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('••••••••••••')).toBeInTheDocument();
-    expect(screen.getByText('Continue')).toBeInTheDocument();
+    expect(screen.getByText('ENTER THE SECRET CODE')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /EXPLORE THE SECRET/i })).toBeInTheDocument();
+    expect(document.getElementById('website-logo')).toBeInTheDocument();
   });
 
   it('shows friendly error message when incorrect secret code is entered', async () => {
     render(<App />);
 
-    const input = screen.getByPlaceholderText('••••••••••••');
-    const continueBtn = screen.getByText('Continue');
+    const input = document.getElementById('secret-code-input');
+    const continueBtn = document.getElementById('continue-button');
 
     fireEvent.change(input, { target: { value: 'wrongcode' } });
     fireEvent.click(continueBtn);
 
     await waitFor(() => {
       expect(
-        screen.getByText('Incorrect secret code. Access denied.')
+        screen.getByText(/The secret code is incorrect. The seal remains unbroken./i)
       ).toBeInTheDocument();
     });
   });
@@ -37,16 +36,16 @@ describe('Realsecrets End-to-End Application Flow', () => {
   it('unlocks and displays Screen 2 (Who are you?) when correct code is entered', async () => {
     render(<App />);
 
-    const input = screen.getByPlaceholderText('••••••••••••');
-    const continueBtn = screen.getByText('Continue');
+    const input = document.getElementById('secret-code-input');
+    const continueBtn = document.getElementById('continue-button');
 
     fireEvent.change(input, { target: { value: 'bepositive' } });
     fireEvent.click(continueBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('Who are you?')).toBeInTheDocument();
-      expect(screen.getByText('Profile N')).toBeInTheDocument();
-      expect(screen.getByText('Profile H')).toBeInTheDocument();
+      expect(screen.getByText('WHO ARE YOU?')).toBeInTheDocument();
+      expect(document.getElementById('profile-btn-n')).toBeInTheDocument();
+      expect(document.getElementById('profile-btn-h')).toBeInTheDocument();
     });
   });
 
@@ -54,87 +53,83 @@ describe('Realsecrets End-to-End Application Flow', () => {
     render(<App />);
 
     // 1. Enter secret code
-    const input = screen.getByPlaceholderText('••••••••••••');
-    const continueBtn = screen.getByText('Continue');
+    const input = document.getElementById('secret-code-input');
+    const continueBtn = document.getElementById('continue-button');
     fireEvent.change(input, { target: { value: 'bepositive' } });
     fireEvent.click(continueBtn);
 
     // 2. Select Profile N
     await waitFor(() => {
-      expect(screen.getByText('Profile N')).toBeInTheDocument();
+      expect(document.getElementById('profile-btn-n')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('Profile N'));
+    fireEvent.click(document.getElementById('profile-btn-n'));
 
     // 3. Verify Screen 3 Chat Interface loaded for N
     await waitFor(() => {
-      expect(screen.getByText('You:')).toBeInTheDocument();
-      expect(screen.getByText('Partner:')).toBeInTheDocument();
+      expect(document.getElementById('message-input')).toBeInTheDocument();
+      expect(document.getElementById('nav-switch-profile')).toBeInTheDocument();
     });
 
     // 4. Send encrypted message as N
-    const messageInput = screen.getByPlaceholderText(
-      /Send encrypted message as Profile N/i
-    );
+    const messageInput = document.getElementById('message-input');
     fireEvent.change(messageInput, {
-      target: { value: 'Hello H, confidential test message.' },
+      target: { value: 'Inscribed secret scroll from N to H.' },
     });
 
-    const sendBtn = screen.getByTitle('Send Encrypted Message');
+    const sendBtn = document.getElementById('send-message-button');
     fireEvent.click(sendBtn);
 
     // Verify message appears in conversation
     await waitFor(() => {
       expect(
-        screen.getByText('Hello H, confidential test message.')
+        screen.getByText('Inscribed secret scroll from N to H.')
       ).toBeInTheDocument();
     });
 
     // 5. Switch to Profile H
-    const switchProfileBtn = screen.getByTitle('Switch between N and H');
+    const switchProfileBtn = document.getElementById('switch-profile-button');
     fireEvent.click(switchProfileBtn);
 
     // Back to Profile Selection
     await waitFor(() => {
-      expect(screen.getByText('Who are you?')).toBeInTheDocument();
+      expect(screen.getByText('WHO ARE YOU?')).toBeInTheDocument();
     });
 
     // Select Profile H
-    fireEvent.click(screen.getByText('Profile H'));
+    fireEvent.click(document.getElementById('profile-btn-h'));
 
     // 6. Verify H sees N's previous message
     await waitFor(() => {
       expect(
-        screen.getByText('Hello H, confidential test message.')
+        screen.getByText('Inscribed secret scroll from N to H.')
       ).toBeInTheDocument();
     });
 
     // Reply as H
-    const replyInput = screen.getByPlaceholderText(
-      /Send encrypted message as Profile H/i
-    );
+    const replyInput = document.getElementById('message-input');
     fireEvent.change(replyInput, {
-      target: { value: 'Received loud and clear, N!' },
+      target: { value: 'Received the secret scroll with gratitude, N!' },
     });
-    const replySendBtn = screen.getByTitle('Send Encrypted Message');
+    const replySendBtn = document.getElementById('send-message-button');
     fireEvent.click(replySendBtn);
 
     // Both messages should now be visible in conversation
     await waitFor(() => {
       expect(
-        screen.getByText('Hello H, confidential test message.')
+        screen.getByText('Inscribed secret scroll from N to H.')
       ).toBeInTheDocument();
       expect(
-        screen.getByText('Received loud and clear, N!')
+        screen.getByText('Received the secret scroll with gratitude, N!')
       ).toBeInTheDocument();
     });
 
     // 7. Lock session
-    const lockBtn = screen.getByTitle('Lock chat session');
+    const lockBtn = document.getElementById('header-lock-button');
     fireEvent.click(lockBtn);
 
     // Back to Screen 1
     await waitFor(() => {
-      expect(screen.getByText('Enter the secret code')).toBeInTheDocument();
+      expect(screen.getByText('ENTER THE SECRET CODE')).toBeInTheDocument();
     });
   });
 });

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import HeaderBanner from './HeaderBanner.jsx';
+import nhLogo from '../assets/nhlogo.webp';
 import {
-  Send,
   Lock,
   ShieldCheck,
-  LogOut,
   RefreshCw,
-  Users,
   AlertTriangle,
   Info,
   CheckCheck,
+  Feather,
 } from 'lucide-react';
 import { encryptMessage, decryptMessage } from '../services/crypto.js';
 import {
@@ -37,6 +37,7 @@ function formatMessageDate(isoString) {
     return date.toLocaleDateString([], {
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
     });
   } catch {
     return '';
@@ -85,7 +86,7 @@ export default function ChatInterface({
         console.warn(`Failed to decrypt message ${msg.id}:`, err);
         return {
           ...msg,
-          decryptedText: '[Encrypted message - Decryption failed]',
+          decryptedText: '[Encrypted Scroll — Decryption Failed]',
           decryptionError: true,
         };
       }
@@ -93,7 +94,6 @@ export default function ChatInterface({
     [secretCode]
   );
 
-  // Initial load of messages
   const loadMessages = React.useCallback(async () => {
     setIsLoading(true);
     setErrorMessage('');
@@ -105,7 +105,7 @@ export default function ChatInterface({
       setMessages(decryptedList);
     } catch (err) {
       console.error('Error fetching messages:', err);
-      setErrorMessage(err.message || 'Failed to load conversation history.');
+      setErrorMessage(err.message || 'Failed to unroll conversation scrolls.');
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +128,7 @@ export default function ChatInterface({
       } catch (err) {
         console.error('Error fetching messages:', err);
         if (isMounted) {
-          setErrorMessage(err.message || 'Failed to load conversation history.');
+          setErrorMessage(err.message || 'Failed to unroll conversation history.');
         }
       } finally {
         if (isMounted) {
@@ -165,12 +165,10 @@ export default function ChatInterface({
     };
   }, [secretCode, decryptSingleMessage]);
 
-  // Auto-scroll to bottom when messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input on load
   useEffect(() => {
     inputRef.current?.focus();
   }, [currentProfile]);
@@ -184,17 +182,14 @@ export default function ChatInterface({
     setErrorMessage('');
 
     try {
-      // Step 1: Encrypt plaintext in the browser before sending
       const { ciphertext, nonce } = await encryptMessage(textToSend, secretCode);
 
-      // Step 2: Persist encrypted payload via chatService (Supabase or Local fallback)
       const inserted = await sendEncryptedMessage({
         sender: currentProfile,
         ciphertext,
         nonce,
       });
 
-      // Cache the plaintext immediately
       decryptedCacheRef.current.set(inserted.id, textToSend);
 
       const localDecrypted = {
@@ -203,7 +198,6 @@ export default function ChatInterface({
         decryptionError: false,
       };
 
-      // Optimistically update if not already received from subscription
       setMessages((prev) => {
         if (prev.some((m) => m.id === inserted.id)) return prev;
         return [...prev, localDecrypted];
@@ -212,7 +206,7 @@ export default function ChatInterface({
       setInputText('');
     } catch (err) {
       console.error('Send message failed:', err);
-      setErrorMessage(`Failed to send message: ${err.message}`);
+      setErrorMessage(`Failed to seal and send message: ${err.message}`);
     } finally {
       setIsSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -228,147 +222,36 @@ export default function ChatInterface({
 
   return (
     <div style={styles.container}>
-      {/* Top Navigation Bar */}
-      <header style={styles.header}>
-        {/* Brand & Identities */}
-        <div style={styles.headerLeft}>
-          <div style={styles.logoBadge}>
-            <Lock size={16} color="var(--accent-h)" />
-            <span style={styles.logoText}>Realsecrets</span>
-          </div>
+      {/* 1. Exactly Styled Header Banner with nhlogo & navigation */}
+      <HeaderBanner
+        currentProfile={currentProfile}
+        partnerProfile={partnerProfile}
+        onLock={onLock}
+        onSwitchProfile={onSwitchProfile}
+        onOpenSecurity={() => setShowSecurityModal(true)}
+        connectionStatus={connectionStatus}
+      />
 
-          <div style={styles.conversationInfo}>
-            <div style={styles.identityPill}>
-              <span style={styles.identityLabel}>You:</span>
-              <span
-                style={{
-                  ...styles.identityTag,
-                  background:
-                    currentProfile === 'N'
-                      ? 'var(--accent-n-bg)'
-                      : 'var(--accent-h-bg)',
-                  color:
-                    currentProfile === 'N'
-                      ? 'var(--accent-n)'
-                      : 'var(--accent-h)',
-                }}
-                id="current-profile-tag"
-              >
-                Profile {currentProfile}
-              </span>
-            </div>
-
-            <span style={styles.speakingArrow}>⇄</span>
-
-            <div style={styles.identityPill}>
-              <span style={styles.identityLabel}>Partner:</span>
-              <span
-                style={{
-                  ...styles.identityTag,
-                  background:
-                    partnerProfile === 'N'
-                      ? 'var(--accent-n-bg)'
-                      : 'var(--accent-h-bg)',
-                  color:
-                    partnerProfile === 'N'
-                      ? 'var(--accent-n)'
-                      : 'var(--accent-h)',
-                }}
-              >
-                Profile {partnerProfile}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Status & Action Controls */}
-        <div style={styles.headerRight}>
-          {/* Realtime / Network Status */}
-          <div
-            style={styles.statusIndicator}
-            title={
-              isSupabaseConfigured()
-                ? `Supabase Realtime: ${connectionStatus}`
-                : 'Local Cross-Tab Sync (Dev Mode)'
-            }
-            id="connection-status-indicator"
-          >
-            <span
-              style={{
-                ...styles.statusDot,
-                backgroundColor:
-                  connectionStatus === 'CONNECTED' ||
-                  connectionStatus === 'MOCK_REALTIME'
-                    ? '#10b981'
-                    : connectionStatus === 'CONNECTING'
-                    ? '#f59e0b'
-                    : '#ef4444',
-              }}
-            />
-            <span style={styles.statusText}>
-              {connectionStatus === 'CONNECTED'
-                ? 'Supabase Live'
-                : connectionStatus === 'MOCK_REALTIME'
-                ? 'Multi-Tab Live'
-                : connectionStatus === 'CONNECTING'
-                ? 'Connecting...'
-                : 'Reconnecting'}
-            </span>
-          </div>
-
-          {/* Security Info Trigger */}
-          <button
-            onClick={() => setShowSecurityModal(true)}
-            style={styles.iconButton}
-            title="Encryption & Security Details"
-            id="security-info-button"
-          >
-            <ShieldCheck size={18} color="var(--accent-n)" />
-          </button>
-
-          {/* Switch Profile Button */}
-          <button
-            onClick={onSwitchProfile}
-            style={styles.iconButton}
-            title="Switch between N and H"
-            id="switch-profile-button"
-          >
-            <Users size={18} color="var(--text-secondary)" />
-          </button>
-
-          {/* Lock Screen Button */}
-          <button
-            onClick={onLock}
-            style={styles.lockButton}
-            title="Lock chat session"
-            id="chat-lock-button"
-          >
-            <LogOut size={16} />
-            <span>Lock</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Main Conversation Stream */}
+      {/* 2. Main Scroll Room (Chat Messages Area) */}
       <main style={styles.chatArea} id="chat-messages-container">
-        {/* Banner if Supabase is not configured yet */}
+        {/* Supabase status warning if in mock mode */}
         {!isSupabaseConfigured() && (
-          <div style={styles.devBanner}>
-            <Info size={16} color="var(--accent-gold)" />
+          <div style={styles.devNotice}>
+            <Info size={16} color="var(--color-gold)" />
             <span>
-              Running in zero-config local sync mode. Connect Supabase via{' '}
-              <code>.env</code> for persistent cloud sync.
+              Sanctum operating in local multi-tab sync mode. Inscribe Supabase credentials in{' '}
+              <code>.env</code> for cloud persistence.
             </span>
           </div>
         )}
 
         {/* Error message banner */}
         {errorMessage && (
-          <div style={styles.errorBanner} className="animate-fade-in">
-            <AlertTriangle size={16} color="var(--accent-danger)" />
+          <div style={styles.errorNotice} className="animate-fade-in">
+            <AlertTriangle size={16} color="var(--color-wax-red)" />
             <span>{errorMessage}</span>
-            <button onClick={loadMessages} style={styles.retryButton}>
-              <RefreshCw size={14} />
+            <button onClick={loadMessages} style={styles.retryBtn}>
+              <RefreshCw size={13} />
               <span>Retry</span>
             </button>
           </div>
@@ -378,25 +261,23 @@ export default function ChatInterface({
         {isLoading && (
           <div style={styles.loadingWrapper}>
             <div style={styles.spinner} />
-            <span>Decrypting secret messages...</span>
+            <span style={styles.loadingText}>Unrolling and deciphering ancient scrolls...</span>
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && messages.length === 0 && (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIconCircle}>
-              <Lock size={32} color="var(--accent-h)" />
+          <div style={styles.emptyContainer} className="animate-fade-in">
+            <div style={styles.emptySeal}>
+              <img src={nhLogo} alt="NH Seal" style={styles.emptyLogo} />
             </div>
-            <h3 style={styles.emptyTitle}>End-to-End Encrypted Chat</h3>
-            <p style={styles.emptySubtitle}>
-              Messages between <strong>Profile N</strong> and{' '}
-              <strong>Profile H</strong> are encrypted with AES-256-GCM before
-              being stored.
+            <h2 className="secret-heading-gold" style={styles.emptyTitle}>
+              THE SECRET CONVERSATION
+            </h2>
+            <p style={styles.emptyDesc}>
+              No correspondence has yet been inscribed between <strong>Profile N</strong> and{' '}
+              <strong>Profile H</strong>. Inscribe the first ciphered scroll below to commence your journey...
             </p>
-            <div style={styles.emptyHint}>
-              Type a message below to start the private conversation.
-            </div>
           </div>
         )}
 
@@ -414,7 +295,9 @@ export default function ChatInterface({
               <React.Fragment key={msg.id || index}>
                 {showDate && (
                   <div style={styles.dateDivider}>
-                    <span>{formatMessageDate(msg.created_at)}</span>
+                    <span style={styles.dateText}>
+                      — {formatMessageDate(msg.created_at)} —
+                    </span>
                   </div>
                 )}
 
@@ -426,84 +309,82 @@ export default function ChatInterface({
                   className="animate-fade-in"
                   data-sender={msg.sender}
                 >
-                  {/* Partner Avatar for incoming messages */}
+                  {/* Partner Seal Avatar */}
                   {!isMe && (
                     <div
                       style={{
-                        ...styles.messageAvatar,
+                        ...styles.sealAvatar,
                         background: isSenderN
-                          ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                          : 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
+                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
                       }}
                     >
-                      {msg.sender}
+                      <span>{msg.sender}</span>
                     </div>
                   )}
 
-                  {/* Message Bubble Container */}
+                  {/* Scroll Bubble */}
                   <div
                     style={{
                       ...styles.bubbleWrapper,
                       alignItems: isMe ? 'flex-end' : 'flex-start',
                     }}
                   >
-                    {/* Sender Label */}
-                    <div style={styles.senderLabel}>
+                    {/* Scribe Label */}
+                    <div style={styles.senderHeader}>
                       <span
                         style={{
-                          fontWeight: '600',
-                          color: isSenderN
-                            ? 'var(--accent-n)'
-                            : 'var(--accent-h)',
+                          ...styles.senderName,
+                          color: isSenderN ? '#8b6b23' : '#8b1e2d',
                         }}
                       >
-                        {isMe ? `You (${msg.sender})` : `Profile ${msg.sender}`}
+                        {isMe ? `You (Profile ${msg.sender})` : `Profile ${msg.sender}`}
                       </span>
                     </div>
 
-                    {/* Bubble */}
+                    {/* Parchment Message Body */}
                     <div
                       style={{
-                        ...styles.bubble,
+                        ...styles.messageScroll,
                         ...(isMe
                           ? isSenderN
-                            ? styles.myBubbleN
-                            : styles.myBubbleH
-                          : styles.theirBubble),
-                        ...(msg.decryptionError ? styles.corruptedBubble : {}),
+                            ? styles.myScrollN
+                            : styles.myScrollH
+                          : styles.theirScroll),
+                        ...(msg.decryptionError ? styles.corruptedScroll : {}),
                       }}
                     >
-                      <p style={styles.messageText}>{msg.decryptedText}</p>
+                      <p style={styles.scrollText}>{msg.decryptedText}</p>
                     </div>
 
-                    {/* Meta info: Timestamp and Encryption Lock */}
-                    <div style={styles.messageMeta}>
-                      <span style={styles.timestamp}>
+                    {/* Meta info: Time and Cryptographic Seal */}
+                    <div style={styles.metaRow}>
+                      <span style={styles.timeLabel}>
                         {formatMessageTime(msg.created_at)}
                       </span>
                       <span
-                        style={styles.encryptedTag}
-                        title="End-to-end encrypted with AES-256-GCM"
+                        style={styles.sealIcon}
+                        title="End-to-End Encrypted with AES-256-GCM"
                       >
-                        <Lock size={11} color="var(--text-muted)" />
+                        <Lock size={11} color="var(--color-gold-dark)" />
                       </span>
                       {isMe && (
-                        <CheckCheck size={13} color="var(--accent-n)" />
+                        <CheckCheck size={13} color="var(--color-wax-red)" />
                       )}
                     </div>
                   </div>
 
-                  {/* My Avatar for outgoing messages */}
+                  {/* My Seal Avatar */}
                   {isMe && (
                     <div
                       style={{
-                        ...styles.messageAvatar,
+                        ...styles.sealAvatar,
                         background: isSenderN
-                          ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                          : 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                          ? 'radial-gradient(circle, #dfb86c 0%, #b38734 70%, #7a5416 100%)'
+                          : 'radial-gradient(circle, #b83344 0%, #8b1e2d 70%, #520e18 100%)',
                       }}
                     >
-                      {msg.sender}
+                      <span>{msg.sender}</span>
                     </div>
                   )}
                 </div>
@@ -513,18 +394,19 @@ export default function ChatInterface({
         <div ref={messagesEndRef} />
       </main>
 
-      {/* Input Composer */}
-      <footer style={styles.footer}>
-        <form onSubmit={handleSendMessage} style={styles.inputForm}>
-          <div style={styles.inputWrapper}>
+      {/* 3. Ancient Scribe Desk (Footer Composer) */}
+      <footer style={styles.footerDesk}>
+        <form onSubmit={handleSendMessage} style={styles.composerForm}>
+          <div style={styles.textareaWrapper}>
             <textarea
               ref={inputRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Send encrypted message as Profile ${currentProfile}... (Enter to send)`}
+              placeholder={`Inscribe secret message as Profile ${currentProfile}... (Enter ↵ to dispatch)`}
               rows={1}
-              style={styles.textarea}
+              className="antique-input"
+              style={styles.composerInput}
               id="message-input"
             />
           </div>
@@ -532,81 +414,80 @@ export default function ChatInterface({
           <button
             type="submit"
             disabled={!inputText.trim() || isSending}
-            style={{
-              ...styles.sendButton,
-              background:
-                currentProfile === 'N'
-                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                  : 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-            }}
+            className="secret-button-framed"
+            style={styles.dispatchBtn}
             id="send-message-button"
-            title="Send Encrypted Message"
+            title="Seal and Dispatch Scroll"
           >
             {isSending ? (
-              <RefreshCw size={18} className="animate-spin" />
+              <RefreshCw size={16} className="animate-spin" />
             ) : (
-              <Send size={18} />
+              <>
+                <Feather size={16} />
+                <span>DISPATCH</span>
+              </>
             )}
           </button>
         </form>
 
-        <div style={styles.inputFooter}>
-          <div style={styles.e2eStatus}>
-            <ShieldCheck size={13} color="var(--accent-n)" />
-            <span>Messages are encrypted client-side before leaving your device</span>
+        <div style={styles.deskFooter}>
+          <div style={styles.e2eNotice}>
+            <ShieldCheck size={14} color="var(--color-gold)" />
+            <span>Client-side AES-256-GCM cipher active • Plaintext is never stored</span>
           </div>
-          <span style={styles.keyHint}>Press Enter ↵ to send</span>
+          <span style={styles.shortcutTip}>Press Enter ↵ to Dispatch Scroll</span>
         </div>
       </footer>
 
-      {/* Security Info Modal */}
+      {/* 4. Security & Cryptographic Details Modal */}
       {showSecurityModal && (
         <div style={styles.modalOverlay} onClick={() => setShowSecurityModal(false)}>
           <div
-            className="glass-panel animate-fade-in"
+            className="parchment-card animate-fade-in"
             style={styles.securityModal}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={styles.secModalHeader}>
-              <div style={styles.secModalIcon}>
-                <ShieldCheck size={24} color="var(--accent-n)" />
+            <div style={styles.secHeader}>
+              <div style={styles.secSealIcon}>
+                <img src={nhLogo} alt="NH Seal" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
-              <h3 style={styles.secModalTitle}>Security & Privacy Architecture</h3>
+              <h3 className="secret-heading-gold" style={{ fontSize: '20px' }}>
+                THE SACRED CRYPTOGRAPHY
+              </h3>
             </div>
 
-            <div style={styles.secModalBody}>
-              <div style={styles.secSection}>
-                <strong>End-to-End Encryption (AES-256-GCM)</strong>
+            <div style={styles.secBody}>
+              <div style={styles.secBox}>
+                <strong style={styles.secTitle}>End-to-End Encryption (AES-256-GCM)</strong>
                 <p>
-                  Every message is encrypted in your browser using AES-256-GCM with a
-                  unique 96-bit cryptographic nonce and PBKDF2 (100,000 iterations).
-                  Neither Supabase nor network eavesdroppers ever receive plaintext.
+                  Every message is encrypted directly inside the browser using AES-256-GCM
+                  with a unique 96-bit cryptographic nonce and PBKDF2 (100,000 iterations).
+                  The Supabase database receives strictly ciphertext and nonces.
                 </p>
               </div>
 
-              <div style={styles.secSection}>
-                <strong>Strict PostgreSQL Row-Level Security</strong>
+              <div style={styles.secBox}>
+                <strong style={styles.secTitle}>PostgreSQL Row Level Security</strong>
                 <p>
-                  The Supabase database enforces check constraints ensuring sender
-                  identities are strictly restricted to <code>N</code> or <code>H</code>.
-                  Database rows store only the ciphertext and nonce.
+                  Database policies validate that only senders strictly identified as <code>N</code> or{' '}
+                  <code>H</code> are accepted. No third party accounts exist.
                 </p>
               </div>
 
-              <div style={styles.secSection}>
-                <strong>Access Verification Notice</strong>
+              <div style={styles.secBox}>
+                <strong style={styles.secTitle}>Operational Privacy</strong>
                 <p>
-                  Access is guarded by the shared passkey. For maximum confidentiality,
-                  N and H should exchange their passkey through a secure channel.
+                  The encryption key exists only in volatile memory and is purged whenever the sanctum is locked.
                 </p>
               </div>
             </div>
 
             <button
               onClick={() => setShowSecurityModal(false)}
-              style={styles.secCloseButton}
+              className="secret-button-framed"
+              style={{ width: '100%' }}
             >
-              Got it
+              SEAL ARCHIVE
             </button>
           </div>
         </div>
@@ -617,112 +498,12 @@ export default function ChatInterface({
 
 const styles = {
   container: {
-    width: '100%',
+    width: '100vw',
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: 'var(--bg-main)',
     overflow: 'hidden',
-  },
-  header: {
-    height: '64px',
-    padding: '0 20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    background: 'rgba(12, 14, 22, 0.85)',
-    backdropFilter: 'blur(20px)',
-    borderBottom: '1px solid var(--border-subtle)',
-    zIndex: 10,
-  },
-  headerLeft: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-  },
-  logoBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  logoText: {
-    fontSize: '17px',
-    fontWeight: '700',
-    letterSpacing: '-0.02em',
-    color: '#ffffff',
-  },
-  conversationInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  identityPill: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '13px',
-  },
-  identityLabel: {
-    color: 'var(--text-muted)',
-    fontSize: '12px',
-  },
-  identityTag: {
-    padding: '3px 9px',
-    borderRadius: 'var(--radius-full)',
-    fontSize: '12px',
-    fontWeight: '600',
-    letterSpacing: '0.02em',
-  },
-  speakingArrow: {
-    color: 'var(--text-muted)',
-    fontSize: '14px',
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  statusIndicator: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    background: 'rgba(255, 255, 255, 0.04)',
-    border: '1px solid var(--border-subtle)',
-    padding: '5px 10px',
-    borderRadius: 'var(--radius-full)',
-  },
-  statusDot: {
-    width: '7px',
-    height: '7px',
-    borderRadius: '50%',
-  },
-  statusText: {
-    fontSize: '12px',
-    fontWeight: '500',
-    color: 'var(--text-secondary)',
-  },
-  iconButton: {
-    width: '36px',
-    height: '36px',
-    borderRadius: 'var(--radius-sm)',
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '1px solid var(--border-subtle)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lockButton: {
-    height: '36px',
-    padding: '0 12px',
-    borderRadius: 'var(--radius-sm)',
-    background: 'rgba(239, 68, 68, 0.1)',
-    border: '1px solid rgba(239, 68, 68, 0.25)',
-    color: '#fca5a5',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
+    background: 'radial-gradient(circle at center, #fdfbf7 0%, #ebe2d3 100%)',
   },
   chatArea: {
     flex: 1,
@@ -731,43 +512,45 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '16px',
-    maxWidth: '900px',
+    maxWidth: '920px',
     width: '100%',
     margin: '0 auto',
   },
-  devBanner: {
+  devNotice: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
     padding: '10px 16px',
-    background: 'rgba(245, 158, 11, 0.08)',
-    border: '1px solid rgba(245, 158, 11, 0.25)',
-    borderRadius: 'var(--radius-md)',
-    fontSize: '13px',
-    color: '#fcd34d',
+    background: 'rgba(212, 167, 85, 0.15)',
+    border: '1px solid rgba(179, 135, 52, 0.4)',
+    borderRadius: '2px',
+    fontSize: '14px',
+    fontFamily: 'var(--font-body)',
+    color: 'var(--color-ink)',
   },
-  errorBanner: {
+  errorNotice: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '10px',
     padding: '10px 16px',
-    background: 'var(--accent-danger-bg)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: 'var(--radius-md)',
-    fontSize: '13px',
-    color: '#fca5a5',
+    background: 'rgba(139, 30, 45, 0.12)',
+    border: '1px solid var(--color-wax-red)',
+    borderRadius: '2px',
+    fontSize: '14px',
+    fontFamily: 'var(--font-body)',
+    color: 'var(--color-wax-red)',
   },
-  retryButton: {
+  retryBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
-    background: 'rgba(239, 68, 68, 0.2)',
-    border: '1px solid rgba(239, 68, 68, 0.4)',
+    background: 'var(--color-wax-red)',
     color: '#ffffff',
+    border: 'none',
     padding: '4px 8px',
-    borderRadius: '4px',
     fontSize: '12px',
+    fontFamily: 'var(--font-heading)',
+    cursor: 'pointer',
   },
   loadingWrapper: {
     display: 'flex',
@@ -776,84 +559,93 @@ const styles = {
     justifyContent: 'center',
     gap: '12px',
     padding: '60px 0',
-    color: 'var(--text-muted)',
-    fontSize: '14px',
   },
   spinner: {
-    width: '28px',
-    height: '28px',
-    border: '3px solid rgba(139, 92, 246, 0.2)',
-    borderTopColor: 'var(--accent-h)',
+    width: '32px',
+    height: '32px',
+    border: '3px solid rgba(179, 135, 52, 0.25)',
+    borderTopColor: 'var(--color-gold)',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },
-  emptyState: {
+  loadingText: {
+    fontFamily: 'var(--font-body)',
+    fontSize: '17px',
+    fontStyle: 'italic',
+    color: 'var(--color-ink-muted)',
+  },
+  emptyContainer: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
     padding: '60px 20px',
-    maxWidth: '440px',
+    maxWidth: '520px',
     margin: 'auto',
   },
-  emptyIconCircle: {
-    width: '64px',
-    height: '64px',
-    borderRadius: '50%',
-    background: 'rgba(139, 92, 246, 0.1)',
-    border: '1px solid rgba(139, 92, 246, 0.25)',
+  emptySeal: {
+    width: '76px',
+    height: '76px',
+    borderRadius: '12px',
+    background: 'radial-gradient(circle, #1a0f05 0%, #000000 100%)',
+    border: '2px solid #b38734',
+    boxShadow: '0 8px 24px rgba(70, 45, 15, 0.45)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: '6px',
     marginBottom: '18px',
   },
+  emptyLogo: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
   emptyTitle: {
+    fontSize: '24px',
+    marginBottom: '10px',
+    letterSpacing: '0.14em',
+  },
+  emptyDesc: {
+    fontFamily: 'var(--font-body)',
     fontSize: '18px',
-    fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: '8px',
-  },
-  emptySubtitle: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    lineHeight: '1.5',
-    marginBottom: '16px',
-  },
-  emptyHint: {
-    fontSize: '12px',
-    color: 'var(--accent-n)',
-    background: 'var(--accent-n-bg)',
-    padding: '6px 14px',
-    borderRadius: 'var(--radius-full)',
+    lineHeight: '1.6',
+    color: 'var(--color-ink-secondary)',
   },
   dateDivider: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     margin: '12px 0',
-    fontSize: '11px',
-    fontWeight: '600',
-    color: 'var(--text-muted)',
+  },
+  dateText: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '12px',
+    fontWeight: '700',
+    letterSpacing: '0.12em',
+    color: 'var(--color-ink-muted)',
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
   },
   messageRow: {
     display: 'flex',
     alignItems: 'flex-end',
-    gap: '10px',
+    gap: '12px',
     width: '100%',
   },
-  messageAvatar: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '10px',
+  sealAvatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    color: '#ffffff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '14px',
+    fontFamily: 'var(--font-title)',
+    fontSize: '16px',
     fontWeight: '700',
-    color: '#ffffff',
+    border: '1.5px solid #ffffff',
+    boxShadow: '0 3px 8px rgba(0,0,0,0.25)',
     flexShrink: 0,
     marginBottom: '4px',
   },
@@ -862,116 +654,121 @@ const styles = {
     flexDirection: 'column',
     maxWidth: '75%',
   },
-  senderLabel: {
-    fontSize: '11px',
+  senderHeader: {
     marginBottom: '3px',
     padding: '0 4px',
   },
-  bubble: {
-    padding: '12px 16px',
-    borderRadius: '18px',
-    wordBreak: 'break-word',
-    lineHeight: '1.5',
-    fontSize: '14.5px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+  senderName: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '11px',
+    fontWeight: '700',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
-  myBubbleN: {
-    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    color: '#ffffff',
-    borderBottomRightRadius: '4px',
+  messageScroll: {
+    padding: '12px 18px',
+    borderRadius: '4px',
+    boxShadow: '0 4px 12px rgba(45, 30, 15, 0.08)',
+    border: '1px solid #d4c2a7',
+    background: '#ffffff',
   },
-  myBubbleH: {
-    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
-    color: '#ffffff',
-    borderBottomRightRadius: '4px',
+  myScrollN: {
+    background: 'linear-gradient(135deg, #fffcf5 0%, #f7efe1 100%)',
+    borderLeft: '4px solid #b38734',
   },
-  theirBubble: {
-    background: 'rgba(25, 28, 42, 0.95)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border-subtle)',
-    borderBottomLeftRadius: '4px',
+  myScrollH: {
+    background: 'linear-gradient(135deg, #fff8f8 0%, #fceed0 100%)',
+    borderLeft: '4px solid #8b1e2d',
   },
-  corruptedBubble: {
-    background: 'var(--accent-danger-bg)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    color: '#fca5a5',
+  theirScroll: {
+    background: 'linear-gradient(135deg, #faf7f2 0%, #f3ebe0 100%)',
+    borderLeft: '4px solid #5a3818',
   },
-  messageText: {
+  corruptedScroll: {
+    background: 'rgba(139, 30, 45, 0.1)',
+    border: '1px solid var(--color-wax-red)',
+    color: 'var(--color-wax-red)',
+  },
+  scrollText: {
+    fontFamily: 'var(--font-body)',
+    fontSize: '17px',
+    lineHeight: '1.55',
+    color: 'var(--color-ink)',
     margin: 0,
     whiteSpace: 'pre-wrap',
   },
-  messageMeta: {
+  metaRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '5px',
+    gap: '6px',
     marginTop: '4px',
     padding: '0 4px',
   },
-  timestamp: {
-    fontSize: '11px',
-    color: 'var(--text-muted)',
+  timeLabel: {
+    fontFamily: 'var(--font-body)',
+    fontSize: '13px',
+    fontStyle: 'italic',
+    color: 'var(--color-ink-muted)',
   },
-  encryptedTag: {
+  sealIcon: {
     display: 'flex',
     alignItems: 'center',
   },
-  footer: {
+  footerDesk: {
     padding: '16px 20px',
-    background: 'rgba(12, 14, 22, 0.85)',
-    backdropFilter: 'blur(20px)',
-    borderTop: '1px solid var(--border-subtle)',
+    background: 'rgba(253, 250, 244, 0.95)',
+    borderTop: '2px solid rgba(179, 135, 52, 0.35)',
+    boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)',
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
-    maxWidth: '900px',
+    maxWidth: '920px',
     width: '100%',
     margin: '0 auto',
   },
-  inputForm: {
+  composerForm: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
     width: '100%',
   },
-  inputWrapper: {
+  textareaWrapper: {
     flex: 1,
-    position: 'relative',
   },
-  textarea: {
+  composerInput: {
     width: '100%',
-    height: '46px',
+    height: '48px',
     padding: '12px 16px',
-    borderRadius: 'var(--radius-md)',
-    fontSize: '14.5px',
+    fontSize: '17px',
     resize: 'none',
   },
-  sendButton: {
-    width: '46px',
-    height: '46px',
-    borderRadius: 'var(--radius-md)',
-    color: '#ffffff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
+  dispatchBtn: {
+    height: '48px',
     flexShrink: 0,
+    fontSize: '12px',
+    padding: '0 22px',
   },
-  inputFooter: {
+  deskFooter: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 4px',
   },
-  e2eStatus: {
+  e2eNotice: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    fontSize: '11.5px',
-    color: 'var(--text-muted)',
+    fontFamily: 'var(--font-body)',
+    fontSize: '14px',
+    fontStyle: 'italic',
+    color: 'var(--color-ink-muted)',
   },
-  keyHint: {
-    fontSize: '11.5px',
-    color: 'var(--text-muted)',
+  shortcutTip: {
+    fontFamily: 'var(--font-heading)',
+    fontSize: '11px',
+    letterSpacing: '0.08em',
+    color: 'var(--color-ink-muted)',
+    textTransform: 'uppercase',
   },
   modalOverlay: {
     position: 'fixed',
@@ -979,8 +776,8 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'rgba(0, 0, 0, 0.75)',
-    backdropFilter: 'blur(6px)',
+    background: 'rgba(20, 10, 5, 0.65)',
+    backdropFilter: 'blur(5px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -989,52 +786,47 @@ const styles = {
   },
   securityModal: {
     width: '100%',
-    maxWidth: '480px',
-    padding: '28px',
+    maxWidth: '520px',
+    padding: '36px 32px',
+    border: '1px solid #b38734',
   },
-  secModalHeader: {
+  secHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '14px',
     marginBottom: '20px',
   },
-  secModalIcon: {
-    width: '42px',
-    height: '42px',
-    borderRadius: '12px',
-    background: 'var(--accent-n-bg)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+  secSealIcon: {
+    width: '46px',
+    height: '46px',
+    borderRadius: '8px',
+    background: '#000',
+    border: '1.5px solid #b38734',
+    padding: '4px',
   },
-  secModalTitle: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  secModalBody: {
+  secBody: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '14px',
     marginBottom: '24px',
-    fontSize: '13.5px',
-    color: 'var(--text-secondary)',
+    fontFamily: 'var(--font-body)',
+    fontSize: '16px',
     lineHeight: '1.5',
+    color: 'var(--color-ink-secondary)',
   },
-  secSection: {
-    background: 'rgba(255, 255, 255, 0.03)',
-    padding: '12px 14px',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px solid var(--border-subtle)',
+  secBox: {
+    background: 'rgba(255, 255, 255, 0.6)',
+    padding: '12px 16px',
+    border: '1px solid #d4c2a7',
+    borderRadius: '2px',
   },
-  secCloseButton: {
-    width: '100%',
-    height: '44px',
-    borderRadius: 'var(--radius-md)',
-    background: 'var(--surface-card-hover)',
-    border: '1px solid var(--border-subtle)',
-    color: '#ffffff',
-    fontSize: '14px',
-    fontWeight: '600',
+  secTitle: {
+    display: 'block',
+    fontFamily: 'var(--font-heading)',
+    fontSize: '13px',
+    letterSpacing: '0.08em',
+    color: 'var(--color-ink)',
+    marginBottom: '4px',
+    textTransform: 'uppercase',
   },
 };
