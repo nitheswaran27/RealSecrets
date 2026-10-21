@@ -314,7 +314,7 @@ export default function ChatInterface({
               THE SECRET CONVERSATION
             </h2>
             <p style={styles.emptyDesc}>
-              No correspondence has yet been inscribed. Inscribe the first ciphered scroll below to commence your secret conversation...
+              No message has yet been inscribed. Inscribe the first message scroll below to commence your secret conversation...
             </p>
           </div>
         )}
@@ -401,8 +401,8 @@ export default function ChatInterface({
                             getMessageStatus(msg) === 'read'
                               ? 'Read'
                               : getMessageStatus(msg) === 'delivered'
-                              ? 'Delivered'
-                              : 'Sent'
+                                ? 'Delivered'
+                                : 'Sent'
                           }
                         >
                           {getMessageStatus(msg) === 'read' ? (
