@@ -148,14 +148,14 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
 
           {/* Golden Roman Heading (Matches "READ THE SECRET STORIES") */}
           <h1 className="secret-heading-gold" style={styles.headingTitle}>
-            ENTER THE SECRET CODE
+            ENTER THE SECRET SPACE
           </h1>
 
           {/* Introductory Literary Paragraph */}
           <p style={styles.introParagraph}>
             No distance fades a genuine connection, and no silence changes where we began <br />
 
-            Enter the name of our quiet group to open the space kept safe across the years.
+            This space is kept safe across the years.
           </p>
 
           {/* Form */}
@@ -163,7 +163,7 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
             {/* Box 1: Secret Code Input */}
             <div style={styles.fieldGroup}>
               <label htmlFor="secret-code-input" style={styles.fieldLabel}>
-                SECRET PASSKEY
+                our group name
               </label>
               <div style={styles.inputWrapper}>
                 <input
@@ -174,7 +174,7 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
                   onKeyDown={handleCodeKeyDown}
                   onBeforeInput={handleCodeBeforeInput}
                   onPaste={handleCodePaste}
-                  placeholder="Inscribe the secret passkey..."
+                  placeholder="Name given to our first group"
                   autoCapitalize="none"
                   autoComplete="off"
                   autoCorrect="off"
@@ -252,9 +252,8 @@ export default function SecretCodeModal({ onUnlock, defaultCode = 'bepositive' }
           <div style={styles.dividerLine} />
 
           {/* Footer Cryptographic Seal */}
-          <div style={styles.securitySealFooter}>
-
-            <span>Whenever life gets noisy and you need a quiet corner to speak, consider this space waiting for you.</span>
+          <div style={styles.securitySealFooter}>                                                                                                                                                  
+            <span>An open line for whenever you need it.No matter the years or the distance, i'm listening here</span>
           </div>
         </div>
       </main>

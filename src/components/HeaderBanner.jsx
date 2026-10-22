@@ -6,21 +6,21 @@ export default function HeaderBanner() {
     <header style={styles.headerContainer}>
       {/* 1. Top Navy Announcement Ribbon (Exact match to image) */}
       <div className="navy-top-bar">
-        <span>+THE SECRET CONVERSATION ONLY BETWEEN YOU and ME+</span>
+        <span>+UNTOUCHED BY TIME OR DISTANCE+</span>
       </div>
 
       {/* 2. Main Parchment Banner with nhlogo & Navigation */}
       <div className="parchment-header-banner">
         {/* Left: nhlogo (Website Logo) */}
         <div style={styles.logoSection}>
-          <div style={styles.logoFrame} title="Realsecrets — N & H Sacred Cipher">
+          {/* <div style={styles.logoFrame} title="Realsecrets — N & H Sacred Cipher">
             <img
               src={nhLogo}
               alt="Realsecrets N & H Logo"
               style={styles.logoImg}
               id="website-logo"
             />
-          </div>
+          </div> */}
           <div style={styles.logoTitles}>
             <span style={styles.logoMainTitle}>Real secrets</span>
             <span style={styles.logoSubtitle}>The Secret Correspondence</span>
