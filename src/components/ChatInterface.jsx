@@ -192,10 +192,6 @@ export default function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [currentProfile]);
-
   // Calculates real delivery and read status for sent messages
   const getMessageStatus = (msg) => {
     if (msg.sender !== currentProfile) return null;
@@ -258,7 +254,6 @@ export default function ChatInterface({
       setErrorMessage(`Failed to seal and send message: ${err.message}`);
     } finally {
       setIsSending(false);
-      setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
 
