@@ -19,7 +19,11 @@ import {
 function formatMessageTime(isoString) {
   try {
     const date = new Date(isoString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
   } catch {
     return '';
   }
@@ -29,12 +33,19 @@ function formatMessageDate(isoString) {
   try {
     const date = new Date(isoString);
     const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     }
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    }
+
     return date.toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
     });
   } catch {
