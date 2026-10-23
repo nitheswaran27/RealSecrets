@@ -13,14 +13,14 @@ export default function HeaderBanner() {
       <div className="parchment-header-banner">
         {/* Left: nhlogo (Website Logo) */}
         <div style={styles.logoSection}>
-          {/* <div style={styles.logoFrame} title="Realsecrets — N & H Sacred Cipher">
+          <div style={styles.logoFrame} title="Realsecrets — N & H Sacred Cipher">
             <img
               src={nhLogo}
               alt="Realsecrets N & H Logo"
               style={styles.logoImg}
               id="website-logo"
             />
-          </div> */}
+          </div>
           <div style={styles.logoTitles}>
             <span style={styles.logoMainTitle}>Real secrets</span>
             <span style={styles.logoSubtitle}>The Secret Correspondence</span>

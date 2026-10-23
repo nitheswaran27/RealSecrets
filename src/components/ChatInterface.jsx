@@ -314,7 +314,7 @@ export default function ChatInterface({
               THE SECRET CONVERSATION
             </h2>
             <p style={styles.emptyDesc}>
-              No message has yet been inscribed. Inscribe the first message scroll below to commence your secret conversation...
+              No message has yet been shared yet. Write the first message below to start the secret conversation...
             </p>
           </div>
         )}
@@ -433,7 +433,7 @@ export default function ChatInterface({
               onChange={(e) => setInputText(e.target.value)}
               onFocus={handleInputFocus}
               onKeyDown={handleKeyDown}
-              placeholder={`Inscribe secret message`}
+              placeholder={`Write secret message`}
               rows={1}
               enterKeyHint="send"
               autoCapitalize="sentences"
